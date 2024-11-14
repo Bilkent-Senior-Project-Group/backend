@@ -9,7 +9,7 @@ namespace CompanyHubService.Models
         public int UserCompanyID { get; set; }
 
         [ForeignKey("User")]
-        public Guid UserId { get; set; }
+        public string UserId { get; set; }
 
         [ForeignKey("Company")]
         public Guid CompanyId { get; set; }

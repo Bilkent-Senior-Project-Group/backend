@@ -2,10 +2,11 @@
 using CompanyHubService.Models;
 using System.Collections.Generic;
 using System.Reflection.Emit;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
 namespace CompanyHubService.Data
 {
-    public class CompanyHubDbContext : DbContext
+    public class CompanyHubDbContext : IdentityDbContext<User>
     {
         public CompanyHubDbContext(DbContextOptions<CompanyHubDbContext> options)
             : base(options)
