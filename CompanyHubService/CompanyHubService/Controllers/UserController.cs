@@ -1,10 +1,12 @@
 ﻿using CompanyHubService.Models;
 using CompanyHubService.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CompanyHubService.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]/[action]")]
     public class UserController : ControllerBase
@@ -16,6 +18,7 @@ namespace CompanyHubService.Controllers
             this.userService = userService;
         }
 
+        
         [HttpGet]
         public async Task<ActionResult<List<User>>> GetAllUsers()
         {

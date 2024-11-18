@@ -1,9 +1,12 @@
 ﻿using CompanyHubService.Models;
 using CompanyHubService.Views;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 
-public class AccountController : Controller
+[ApiController]
+[Route("api/[controller]/[action]")]
+public class AccountController : ControllerBase
 {
     private readonly AuthService _authService;
 
@@ -15,40 +18,55 @@ public class AccountController : Controller
     [HttpPost]
     public async Task<IActionResult> Register(RegisterViewModel model)
     {
-        if (ModelState.IsValid)
+        if (!ModelState.IsValid)
         {
-            var result = await _authService.RegisterUserAsync(model);
-            if (result.Succeeded)
-            {
-                return Ok(result);
-            }
-            foreach (var error in result.Errors)
-            {
-                ModelState.AddModelError("", error.Description);
-            }
+            return BadRequest(ModelState);
         }
-        return View(model);
+
+       
+        var result = await _authService.RegisterUserAsync(model);
+        if (result.Succeeded)
+        {
+            return Ok(new { Message = "Registration successful!" });
+        }
+       
+        return BadRequest(result.Errors);
     }
 
 
     [HttpPost]
     public async Task<IActionResult> Login(LoginViewModel model)
     {
-        if (ModelState.IsValid)
-        {
-            var result = await _authService.LoginUserAsync(model.Email, model.Password);
-            if (result.Succeeded)
-            {
-                return Ok(result);
-            }
-            ModelState.AddModelError("", "Invalid login attempt.");
+        if (!ModelState.IsValid)
+        {  
+            return BadRequest(new { Message = "Invalid input." });
         }
-        return View(model);
+
+        
+        var (result, token) = await _authService.LoginUserAsync(model.Email, model.Password); // var (result,token)
+
+        if (result.Succeeded)
+        {
+            return Ok(new
+            {
+                Message = "Login successful!",
+                Token = token
+            });
+        }
+
+        else if (result.IsLockedOut)
+        {
+            return Unauthorized(new { Message = "Account is locked out. Please try again later." });
+        }
+
+        return Unauthorized(new { Message = "Invalid login attempt." });
     }
 
+    [Authorize]
+    [HttpPost]
     public async Task<IActionResult> Logout()
     {
         await _authService.LogoutUserAsync();
-        return RedirectToAction("Index", "Home");
+        return Ok(new { Message = "Logout successful! Please clear your token on the client side." }); // i guess related with frontend
     }
 }

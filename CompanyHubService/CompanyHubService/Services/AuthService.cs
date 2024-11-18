@@ -1,6 +1,10 @@
 ﻿using CompanyHubService.Models;
 using CompanyHubService.Views;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using System.Threading.Tasks;
 
 public class AuthService
@@ -21,20 +25,61 @@ public class AuthService
             FirstName = model.FirstName,
             LastName = model.LastName,
             Email = model.Email,
+            UserName = model.Username,
+            PhoneNumber = model.Phone
 
         };
         var password = model.Password;
         return await _userManager.CreateAsync(user, password);
     }
 
-    public async Task<SignInResult> LoginUserAsync(string email, string password)
+
+
+    public async Task<(SignInResult, string)> LoginUserAsync(string email, string password)
     {
-        var result = await _signInManager.PasswordSignInAsync(email, password, isPersistent: false, lockoutOnFailure: false);
-        return result;
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user == null)
+        {
+            return (SignInResult.Failed, null);
+        }
+
+        var result = await _signInManager.PasswordSignInAsync(user.UserName, password, isPersistent: false, lockoutOnFailure: false);
+
+        if (result.Succeeded)
+        {
+            var token = GenerateJwtToken(user);
+            return (result, token);
+        }
+
+        return (result, null);
     }
+
 
     public async Task LogoutUserAsync()
     {
         await _signInManager.SignOutAsync();
+    }
+
+    public string GenerateJwtToken(User user)
+    {
+        var claims = new[]
+        {
+        new Claim(JwtRegisteredClaimNames.Sub, user.Id),
+        new Claim(JwtRegisteredClaimNames.Email, user.Email),
+        new Claim(ClaimTypes.Name, user.UserName)
+        };
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("m4BvUuv6DReEzE2E1ozNlbXK9er4JRXI")); 
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var token = new JwtSecurityToken(
+            issuer: "Compedia",
+            audience: "CompediaClient",
+            claims: claims,
+            expires: DateTime.UtcNow.AddHours(1),
+            signingCredentials: creds
+        );
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }
