@@ -22,6 +22,9 @@ namespace CompanyHubService.Data
         // DbSet for UserCompany model
         public DbSet<UserCompany> UserCompanies { get; set; }
 
+        public DbSet<UserClaim> UserClaims { get; set; }
+
+
         // Configuring relationships and table properties
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -38,6 +41,12 @@ namespace CompanyHubService.Data
                 .HasOne(uc => uc.Company)
                 .WithMany()
                 .HasForeignKey(uc => uc.CompanyId);
+
+            modelBuilder.Entity<UserClaim>()
+            .HasOne(uc => uc.Company)
+            .WithMany()
+            .HasForeignKey(uc => uc.CompanyId)
+            .OnDelete(DeleteBehavior.Cascade);
 
             // You can add more configurations here if necessary.
         }
