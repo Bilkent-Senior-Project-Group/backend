@@ -1,5 +1,7 @@
 using CompanyHubService.Data;
+using CompanyHubService.DTOs;
 using CompanyHubService.Models;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
 
 namespace CompanyHubService.Services
@@ -46,6 +48,24 @@ namespace CompanyHubService.Services
             await _dbContext.SaveChangesAsync();
 
             return true;
+        }
+
+        public async Task<List<UserDTO>> GetUsersOfCompanyAsync(Guid companyId)
+        {
+            var users = await _dbContext.UserCompanies
+                .Where(uc => uc.CompanyId == companyId)
+                .Include(uc => uc.User) // Include User details
+                .Select(uc => new UserDTO
+                {
+                    Id = uc.User.Id,
+                    FirstName = uc.User.FirstName,
+                    LastName = uc.User.LastName,
+                    Email = uc.User.Email,
+                    PhoneNumber = uc.User.PhoneNumber,
+                })
+                .ToListAsync();
+
+            return users;
         }
     }
 }
