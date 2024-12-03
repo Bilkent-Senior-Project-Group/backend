@@ -52,6 +52,7 @@ builder.Services.Configure<IdentityOptions>(options =>
 
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<CompanyService>();
 builder.Services.AddScoped<RoleSeeder>();
 
 builder.Services.AddControllers();
