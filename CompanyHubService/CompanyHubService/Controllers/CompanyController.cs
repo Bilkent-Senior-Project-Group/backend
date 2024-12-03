@@ -53,4 +53,19 @@ public class CompanyController : ControllerBase
         return Ok(new { Message = "Company successfully created." });
     }
 
+    [HttpGet("GetUsersOfCompany/{companyId}")]
+    [Authorize] // Optional: Ensure only authorized users can access this
+    public async Task<IActionResult> GetUsersOfCompany(Guid companyId)
+    {
+        var users = await companyService.GetUsersOfCompanyAsync(companyId);
+
+        if (users == null || !users.Any())
+        {
+            return NotFound(new { Message = "No users found for the company." });
+        }
+
+        return Ok(users);
+    }
+
+
 }

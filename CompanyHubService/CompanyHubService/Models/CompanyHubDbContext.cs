@@ -24,6 +24,10 @@ namespace CompanyHubService.Data
 
         public DbSet<UserClaim> UserClaims { get; set; }
 
+        public DbSet<Product> Products { get; set; }
+        public DbSet<ProductClient> ProductClients { get; set; }
+
+
 
         // Configuring relationships and table properties
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -48,7 +52,30 @@ namespace CompanyHubService.Data
             .HasForeignKey(uc => uc.CompanyId)
             .OnDelete(DeleteBehavior.Cascade);
 
-            // You can add more configurations here if necessary.
+            // Product configuration
+            modelBuilder.Entity<Product>()
+                .HasKey(p => p.ProductId); // Primary Key
+            modelBuilder.Entity<Product>()
+                .HasOne(p => p.Company)
+                .WithMany(c => c.Products) // One-to-Many relationship
+                .HasForeignKey(p => p.CompanyId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // ProductClient configuration
+            modelBuilder.Entity<ProductClient>()
+                .HasKey(pc => pc.ProductClientId); // Primary Key
+
+            modelBuilder.Entity<ProductClient>()
+                .HasOne(pc => pc.Product)
+                .WithMany(p => p.ProductClients) // One-to-Many relationship
+                .HasForeignKey(pc => pc.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ProductClient>()
+                .HasOne(pc => pc.ClientCompany)
+                .WithMany(c => c.ClientProductClients) // Assuming a Company.ClientProductClients property
+                .HasForeignKey(pc => pc.ClientCompanyId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }
