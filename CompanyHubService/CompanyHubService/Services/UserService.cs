@@ -51,5 +51,48 @@ namespace CompanyHubService.Services
                 PhoneNumber = user.PhoneNumber,
             };
         }
+
+
+        // For now just for test purpose, but later we might only give authorizations for certain type of users for this.
+        // Not working now for some reason.
+        public async Task<bool> AddUserToCompany(string userId, Guid companyId, string roleId)
+        {
+            // Check if the user and company exist
+            var userExists = await _dbContext.Users.AnyAsync(u => u.Id == userId);
+            var company = await _dbContext.Companies.FirstOrDefaultAsync(c => c.CompanyId == companyId);
+
+            if (!userExists || company == null)
+            {
+                return false;
+            }
+
+            // Check if the user is already in the company
+            var alreadyExists = await _dbContext.UserCompanies.AnyAsync(uc => uc.UserId == userId && uc.CompanyId == companyId);
+            if (alreadyExists)
+            {
+                return false;
+            }
+
+            // Add the user to the company
+            var userCompany = new UserCompany
+            {
+                UserId = userId,
+                CompanyId = companyId,
+                RoleId = roleId
+            };
+
+            _dbContext.UserCompanies.Add(userCompany);
+
+            // Increase the company size
+            company.CompanySize += 1;
+            _dbContext.Companies.Update(company);
+
+            // Save changes
+            await _dbContext.SaveChangesAsync();
+
+            return true;
+        }
+
+
     }
 }
