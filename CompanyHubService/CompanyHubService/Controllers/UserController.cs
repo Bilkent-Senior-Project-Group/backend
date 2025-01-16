@@ -1,8 +1,13 @@
-﻿using CompanyHubService.Models;
+﻿using System.Security.Claims;
+using CompanyHubService.Data;
+using CompanyHubService.DTOs;
+using CompanyHubService.Models;
 using CompanyHubService.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
 
 namespace CompanyHubService.Controllers
 {
@@ -12,10 +17,14 @@ namespace CompanyHubService.Controllers
     public class UserController : ControllerBase
     {
         private readonly UserService userService;
+        private readonly UserManager<User> userManager;
+        private readonly CompanyHubDbContext dbContext;
 
-        public UserController(UserService userService)
+        public UserController(UserService userService, UserManager<User> userManager, CompanyHubDbContext dbContext)
         {
             this.userService = userService;
+            this.userManager = userManager;
+            this.dbContext = dbContext;
         }
 
 
@@ -31,9 +40,17 @@ namespace CompanyHubService.Controllers
             return Ok(users);
         }
 
-        [HttpGet("GetUserCompanies/{userId}")]
-        public async Task<IActionResult> GetUserCompanies(string userId)
+        [HttpGet("GetUserCompanies")]
+        [Authorize]
+        public async Task<IActionResult> GetUserCompanies()
         {
+            // Extract user ID from JWT token
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { Message = "User ID not found in token." });
+            }
+
             var companies = await userService.GetUserCompaniesAsync(userId);
 
             if (companies == null || !companies.Any())
@@ -43,5 +60,32 @@ namespace CompanyHubService.Controllers
 
             return Ok(companies);
         }
+
+
+
+        [HttpPost("AddUserToCompany")]
+        public async Task<IActionResult> AddUserToCompany(string userId, string companyId, string roleId)
+        {
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(companyId) || string.IsNullOrEmpty(roleId))
+            {
+                return BadRequest(new { Message = "Invalid input parameters." });
+            }
+
+            // Parse companyId to Guid
+            if (!Guid.TryParse(companyId, out var companyGuid))
+            {
+                return BadRequest(new { Message = "Invalid Company ID." });
+            }
+
+            var result = await userService.AddUserToCompany(userId, companyGuid, roleId);
+
+            if (!result)
+            {
+                return BadRequest(new { Message = "Failed to add user to company." });
+            }
+
+            return Ok(new { Message = "User successfully added to the company." });
+        }
+
     }
 }
