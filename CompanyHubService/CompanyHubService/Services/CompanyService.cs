@@ -3,6 +3,8 @@ using CompanyHubService.DTOs;
 using CompanyHubService.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
+using Confluent.Kafka;
+using System.Text.Json;
 
 namespace CompanyHubService.Services
 {
@@ -10,11 +12,13 @@ namespace CompanyHubService.Services
     {
         private CompanyHubDbContext _dbContext { get; set; }
         private UserService userService { get; set; }
+        private readonly IProducer<string, string> _kafkaProducer;
 
-        public CompanyService(CompanyHubDbContext dbContext, UserService userService)
+        public CompanyService(CompanyHubDbContext dbContext, UserService userService, IProducer<string, string> kafkaProducer)
         {
             _dbContext = dbContext;
             this.userService = userService;
+            _kafkaProducer = kafkaProducer;
         }
 
         public async Task<bool> CreateCompanyAsync(string companyName, int foundationYear, string address, string userId, string roleId)
@@ -46,6 +50,32 @@ namespace CompanyHubService.Services
 
             _dbContext.UserCompanies.Add(userCompany);
             await _dbContext.SaveChangesAsync();
+
+            return true;
+        }
+
+        public async Task<bool> ModifyCompanyProfileAsync(CompanyProfileDTO companyProfileDTO)
+        {
+            try
+            {
+                // Serialize the DTO to JSON
+                var messageValue = JsonSerializer.Serialize(companyProfileDTO);
+
+                // Create the Kafka message
+                var message = new Message<string, string>
+                {
+                    Key = companyProfileDTO.CompanyId.ToString(), // Use CompanyId as the key
+                    Value = messageValue                          // JSON payload as the value
+                };
+
+                var result = await _kafkaProducer.ProduceAsync("modifyCompanySpecialty", message);
+                Console.WriteLine($"Sent message to Kafka topic {result.TopicPartitionOffset}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error producing Kafka message: {ex.Message}");
+                return false;
+            }
 
             return true;
         }

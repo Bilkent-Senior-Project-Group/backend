@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using CompanyHubService.Seeders;
+using Confluent.Kafka;
 
 
 
@@ -49,6 +50,20 @@ builder.Services.Configure<IdentityOptions>(options =>
     options.Lockout.MaxFailedAccessAttempts = 5;
     options.SignIn.RequireConfirmedEmail = false;
 });
+
+
+// Add Kafka configuration from appsettings.json
+var kafkaConfig = new ProducerConfig
+{
+    BootstrapServers = builder.Configuration["Kafka:BootstrapServers"],
+    SaslMechanism = SaslMechanism.Plain,
+    SecurityProtocol = SecurityProtocol.SaslSsl,
+    SaslUsername = builder.Configuration["Kafka:SaslUsername"],
+    SaslPassword = builder.Configuration["Kafka:SaslPassword"]
+};
+
+// Register Kafka producer as a singleton service
+builder.Services.AddSingleton<IProducer<string, string>>(new ProducerBuilder<string, string>(kafkaConfig).Build());
 
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<AuthService>();
