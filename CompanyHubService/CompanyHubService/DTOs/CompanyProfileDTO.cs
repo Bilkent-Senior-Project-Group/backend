@@ -3,6 +3,6 @@
     public class CompanyProfileDTO
     {
         public Guid CompanyId { get; set; }
-        public string? Specialties;
+        public string? Specialties { get; set; }
     }
 }
