@@ -53,6 +53,27 @@ public class CompanyController : ControllerBase
         return Ok(new { Message = "Company successfully created." });
     }
 
+    [HttpPost("ModifyCompanyProfile")]
+    //[Authorize]
+    public async Task<IActionResult> ModifyCompanyProfile(CompanyProfileDTO companyProfileDTO)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(new { Message = "Invalid input parameters." });
+        }
+
+        var result = await companyService.ModifyCompanyProfileAsync(companyProfileDTO);
+
+        if (!result)
+        {
+            return BadRequest(new { Message = "Failed to modify company profile." });
+        }
+        else
+        {
+            return Ok(new { Message = "Company profile is successfully modified." });
+        }
+    }
+
     [HttpGet("GetUsersOfCompany/{companyId}")]
     [Authorize] // Optional: Ensure only authorized users can access this
     public async Task<IActionResult> GetUsersOfCompany(Guid companyId)
