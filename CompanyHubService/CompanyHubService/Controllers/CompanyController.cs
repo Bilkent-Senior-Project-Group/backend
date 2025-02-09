@@ -35,15 +35,10 @@ public class CompanyController : ControllerBase
 
         // Define the role as CompanyAdmin for the creator
         var roleId = "e9fe2584-94a2-4c37-90d8-437041c07ab8"; //ADMIN
-        // 
+                                                             // 
 
-        var result = await companyService.CreateCompanyAsync(
-            request.CompanyName,
-            request.FoundationYear,
-            request.Address,
-            userId,
-            roleId
-        );
+
+        var result = await companyService.CreateCompanyAsync(request, userId, roleId);
 
         if (!result)
         {
@@ -86,6 +81,35 @@ public class CompanyController : ControllerBase
         }
 
         return Ok(users);
+    }
+
+    [HttpPost("AddCompany")]
+    public async Task<IActionResult> AddCompany([FromBody] CompanyProfileDTO companyDto)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(new { Message = "Invalid input parameters." });
+        }
+
+        var result = await companyService.AddCompanyAsync(companyDto);
+
+        if (!result)
+        {
+            return BadRequest(new { Message = "Failed to add company." });
+        }
+
+        return Ok(new { Message = "Company successfully added." });
+    }
+
+    [HttpPost("BulkAddCompanies")]
+    public async Task<IActionResult> BulkAddCompanies([FromBody] BulkCompanyInsertDTO bulkCompanies)
+    {
+        var result = await companyService.BulkAddCompaniesAsync(bulkCompanies);
+
+        if (result)
+            return Ok(new { message = "All companies added successfully." });
+
+        return BadRequest(new { message = "Failed to add companies." });
     }
 
 

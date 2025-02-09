@@ -15,6 +15,7 @@ namespace CompanyHubService.Data
 
         // DbSet for User model
         public DbSet<User> Users { get; set; }
+        public DbSet<Project> Projects { get; set; }
 
         // DbSet for Company model
         public DbSet<Company> Companies { get; set; }
@@ -33,6 +34,10 @@ namespace CompanyHubService.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // Company Config
+            modelBuilder.Entity<Company>()
+                .HasKey(c => c.CompanyId);
 
             // Defining the relationship between User and UserCompany
             modelBuilder.Entity<UserCompany>()
@@ -76,6 +81,16 @@ namespace CompanyHubService.Data
                 .WithMany(c => c.ClientProductClients) // Assuming a Company.ClientProductClients property
                 .HasForeignKey(pc => pc.ClientCompanyId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Project Config
+            modelBuilder.Entity<Project>()
+                .HasKey(p => p.ProjectId);
+
+            modelBuilder.Entity<Project>()
+                .HasOne(p => p.Company)
+                .WithMany(c => c.Projects)
+                .HasForeignKey(p => p.CompanyId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }
