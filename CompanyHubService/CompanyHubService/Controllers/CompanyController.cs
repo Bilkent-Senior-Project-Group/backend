@@ -83,6 +83,21 @@ public class CompanyController : ControllerBase
         return Ok(users);
     }
 
+    [HttpGet("GetCompaniesOfUser/{userId}")]
+    [Authorize] // Optional: Ensure only authorized users can access this
+    public async Task<IActionResult> GetCompaniesOfUser(string userId)
+    {
+        var companies = await companyService.GetCompaniesOfUserAsync(userId);
+
+        if (companies == null || !companies.Any())
+        {
+            return NotFound(new { Message = "No company found for the user." });
+        }
+
+        return Ok(companies);
+    }
+
+
     [HttpPost("AddCompany")]
     public async Task<IActionResult> AddCompany([FromBody] CompanyProfileDTO companyDto)
     {

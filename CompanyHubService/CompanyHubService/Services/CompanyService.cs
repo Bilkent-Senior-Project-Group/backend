@@ -208,6 +208,21 @@ namespace CompanyHubService.Services
             return users;
         }
 
+        public async Task<List<CompanyDTO>> GetCompaniesOfUserAsync(string userId)
+        {
+            var companies = await _dbContext.UserCompanies
+                .Where(uc => uc.UserId == userId)
+                .Include(uc => uc.Company)
+                .Select(uc => new CompanyDTO
+                {
+                    CompanyId = uc.Company.CompanyId,
+                    CompanyName = uc.Company.CompanyName
+                })
+                .ToListAsync();
+
+            return companies;
+        }
+
         public async Task<bool> BulkAddCompaniesAsync(BulkCompanyInsertDTO bulkCompanies)
         {
             using var transaction = await _dbContext.Database.BeginTransactionAsync();
