@@ -37,7 +37,8 @@ namespace CompanyHubService.Services
                 Website = request.Website,
                 CompanySize = request.CompanySize,
                 Verified = false,
-                ContactInfo = request.ContactInfo
+                ContactInfo = request.ContactInfo,
+                CoreExpertise = request.CoreExpertise
             };
 
 
@@ -86,15 +87,15 @@ namespace CompanyHubService.Services
             try
             {
 
-                Console.WriteLine("📌 Starting AddCompanyAsync...");
+                Console.WriteLine("Starting AddCompanyAsync...");
 
                 if (companyDto == null)
                 {
-                    Console.WriteLine("❌ companyDto is NULL!");
+                    Console.WriteLine("companyDto is NULL!");
                     return false;
                 }
 
-                Console.WriteLine($"📌 Processing Company: {companyDto.Name}");
+                Console.WriteLine($"Processing Company: {companyDto.Name}");
 
                 // Create new company entity
                 var company = new Company
@@ -116,7 +117,7 @@ namespace CompanyHubService.Services
                 _dbContext.Companies.Add(company);
                 await _dbContext.SaveChangesAsync();
 
-                Console.WriteLine($"✅ Successfully added company: {company.CompanyName}");
+                Console.WriteLine($"Successfully added company: {company.CompanyName}");
 
                 // Add projects (portfolio) to Projects table
 
@@ -141,19 +142,19 @@ namespace CompanyHubService.Services
                         };
 
                         _dbContext.Projects.Add(project);
-                        Console.WriteLine($"✅ Added project: {project.ProjectName}");
+                        Console.WriteLine($"Added project: {project.ProjectName}");
                     }
                 }
 
                 else
                 {
-                    Console.WriteLine("⚠️ No projects found in portfolio.");
+                    Console.WriteLine("No projects found in portfolio.");
                 }
 
                 await _dbContext.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                Console.WriteLine("✅ Transaction committed. Company added successfully.");
+                Console.WriteLine("Transaction committed. Company added successfully.");
                 return true;
             }
             catch (Exception ex)
@@ -230,7 +231,7 @@ namespace CompanyHubService.Services
             {
                 if (bulkCompanies.Companies == null || !bulkCompanies.Companies.Any())
                 {
-                    Console.WriteLine("⚠️ No companies found in the input JSON.");
+                    Console.WriteLine("No companies found in the input JSON.");
                     return false;
                 }
 
@@ -256,7 +257,7 @@ namespace CompanyHubService.Services
                         FoundedYear = companyDto.FoundedYear,
                         ContactInfo = companyDto.ContactInfo,
                         Address = companyDto.Address,
-                        Verified = companyDto.Verified == 1
+                        Verified = companyDto.Verified == 0
                     };
 
                     companiesToInsert.Add(company);
@@ -290,13 +291,13 @@ namespace CompanyHubService.Services
                 await _dbContext.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                Console.WriteLine("✅ All companies and projects added successfully.");
+                Console.WriteLine("All companies and projects added successfully.");
                 return true;
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                Console.WriteLine($"❌ Error during bulk insert: {ex.Message}");
+                Console.WriteLine($"Error during bulk insert: {ex.Message}");
                 return false;
             }
         }

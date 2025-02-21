@@ -17,6 +17,7 @@ public class CompanyController : ControllerBase
         this.userService = userService;
     }
 
+    // This is the one where the root user creates/adds a company by himself/herself
     [HttpPost("CreateCompany")]
     [Authorize]
     public async Task<IActionResult> CreateCompany([FromBody] CreateCompanyRequestDTO request)
@@ -97,7 +98,7 @@ public class CompanyController : ControllerBase
         return Ok(companies);
     }
 
-
+    //This is the one where company is added from a given json file with one company
     [HttpPost("AddCompany")]
     public async Task<IActionResult> AddCompany([FromBody] CompanyProfileDTO companyDto)
     {
@@ -116,6 +117,7 @@ public class CompanyController : ControllerBase
         return Ok(new { Message = "Company successfully added." });
     }
 
+    //This is the one where company is added from a given json file with muitple companies
     [HttpPost("BulkAddCompanies")]
     public async Task<IActionResult> BulkAddCompanies([FromBody] BulkCompanyInsertDTO bulkCompanies)
     {
