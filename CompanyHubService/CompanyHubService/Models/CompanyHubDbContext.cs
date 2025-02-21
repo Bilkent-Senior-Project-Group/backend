@@ -28,6 +28,8 @@ namespace CompanyHubService.Data
         public DbSet<Product> Products { get; set; }
         public DbSet<ProductClient> ProductClients { get; set; }
 
+        public DbSet<Notification> Notifications { get; set; }
+
 
 
         // Configuring relationships and table properties

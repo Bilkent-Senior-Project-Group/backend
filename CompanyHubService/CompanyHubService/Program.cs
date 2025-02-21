@@ -69,6 +69,7 @@ builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<CompanyService>();
 builder.Services.AddScoped<RoleSeeder>();
+builder.Services.AddScoped<NotificationService>();
 builder.Services.AddTransient<EmailService>();
 
 
