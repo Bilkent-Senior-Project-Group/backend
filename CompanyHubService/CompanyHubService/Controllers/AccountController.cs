@@ -4,7 +4,9 @@ using CompanyHubService.Services;
 using CompanyHubService.Views;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 
 [ApiController]
@@ -13,13 +15,15 @@ public class AccountController : ControllerBase
 {
     private readonly AuthService _authService;
     private readonly UserService _userService;
+    private readonly EmailService _emailService;
     private readonly UserManager<User> _userManager;
 
-    public AccountController(AuthService authService, UserService userService, UserManager<User> userManager)
+    public AccountController(AuthService authService, UserService userService, UserManager<User> userManager, EmailService emailService)
     {
         _authService = authService;
         _userService = userService;
         _userManager = userManager;
+        _emailService = emailService;
     }
 
     [HttpPost("Register")]
@@ -107,4 +111,67 @@ public class AccountController : ControllerBase
 
         return Ok(new { IsRegistered = isRegistered });
     }
+
+    [HttpPost("ForgotPassword")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDTO model)
+    {
+        if (string.IsNullOrEmpty(model.Email))
+        {
+            return BadRequest(new { message = "Email is required." });
+        }
+
+        var user = await _userManager.FindByEmailAsync(model.Email);
+        if (user == null)
+        {
+            return BadRequest(new { message = "User not found." });
+        }
+
+        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+        // HERE WE SHOULD PASS THE LINK FOR THE RESET PASSWORD APGE
+        var resetLink = $"{Request.Scheme}://{Request.Host}/reset-password?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(user.Email)}";
+
+        //LATER DELETE THE TOKEN FROM EMAIL BODY 
+        string emailBody = $@"
+                <h3>Password Reset Request</h3>
+                <p>Click the link below to reset your password:</p>
+                <a href='{HtmlEncoder.Default.Encode(resetLink)}'>Reset Password</a>
+                <p>{token}<p>
+            ";
+
+        bool emailSent = await _emailService.SendEmailAsync(user.Email, "Compedia Password Reset", emailBody);
+
+        if (!emailSent)
+        {
+            return StatusCode(500, new { message = "Error sending email. Try again later." });
+        }
+
+        return Ok(new { message = "Password reset email sent successfully." });
+    }
+
+    [HttpPost("ResetPassword")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDTO model)
+    {
+        if (string.IsNullOrEmpty(model.Email) || string.IsNullOrEmpty(model.Token) || string.IsNullOrEmpty(model.NewPassword))
+        {
+            return BadRequest(new { message = "Invalid request." });
+        }
+
+        var user = await _userManager.FindByEmailAsync(model.Email);
+        if (user == null)
+        {
+            return BadRequest(new { message = "User not found." });
+        }
+
+        var resetResult = await _userManager.ResetPasswordAsync(user, model.Token, model.NewPassword);
+        if (!resetResult.Succeeded)
+        {
+            return BadRequest(new { message = "Password reset failed.", errors = resetResult.Errors });
+        }
+
+        return Ok(new { message = "Password reset successful!" });
+    }
+
+
+
+
 }
