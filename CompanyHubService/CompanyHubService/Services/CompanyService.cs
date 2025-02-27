@@ -292,6 +292,45 @@ namespace CompanyHubService.Services
                 await transaction.CommitAsync();
 
                 Console.WriteLine("All companies and projects added successfully.");
+                
+                var mappedCompaniesForKafka = companiesToInsert.Select(company => new
+                {
+                    id = company.CompanyId,
+                    name = company.CompanyName,
+                    specialties = company.Specialties,
+                    core_expertise = company.CoreExpertise,
+                    industries = company.Industries,
+                    location = company.Location,
+                    technologies_used = projectsToInsert
+                            .Where(p => p.CompanyId == company.CompanyId)
+                            .Select(p => p.TechnologiesUsed)
+                            .Distinct()
+                            .ToList(),
+                    company_size = company.CompanySize,
+                    founded_year = company.FoundedYear
+                }).ToList();
+
+                try
+                {
+                    // Serialize the DTO to JSON
+                    var messageValue = JsonSerializer.Serialize(mappedCompaniesForKafka);
+
+                    // Create the Kafka message
+                    var message = new Message<string, string>
+                    {
+                        Key = DateTime.Now.ToString(), 
+                        Value = messageValue                          
+                    };
+
+                    var result = await _kafkaProducer.ProduceAsync("addBulkCompanies", message);
+                    Console.WriteLine($"Sent message to Kafka topic {result.TopicPartitionOffset}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error producing Kafka message: {ex.Message}");
+                    return false;
+                }
+
                 return true;
             }
             catch (Exception ex)
@@ -301,8 +340,5 @@ namespace CompanyHubService.Services
                 return false;
             }
         }
-
-
-
     }
 }
