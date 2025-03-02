@@ -1,10 +1,12 @@
 using System.Security.Claims;
+using CompanyHubService.Data;
 using CompanyHubService.DTOs;
 using CompanyHubService.Models;
 using CompanyHubService.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 [Route("api/[controller]")]
 [ApiController]
@@ -15,11 +17,14 @@ public class CompanyController : ControllerBase
 
     private readonly UserManager<User> userManager;
 
-    public CompanyController(CompanyService companyService, UserService userService, UserManager<User> userManager)
+    private readonly CompanyHubDbContext dbContext;
+
+    public CompanyController(CompanyService companyService, UserService userService, UserManager<User> userManager, CompanyHubDbContext dbContext)
     {
         this.companyService = companyService;
         this.userService = userService;
         this.userManager = userManager;
+        this.dbContext = dbContext;
     }
 
     // This is the one where the root user creates/adds a company by himself/herself
@@ -60,6 +65,52 @@ public class CompanyController : ControllerBase
 
         return Ok(new { Message = "Company successfully created." });
     }
+
+    [HttpGet("GetCompany/{companyId}")]
+    public async Task<IActionResult> GetCompany(Guid companyId)
+    {
+        var company = await dbContext.Companies
+            .Where(c => c.CompanyId == companyId)
+            .Include(c => c.Projects) // ✅ Include projects under the company
+            .FirstOrDefaultAsync();
+
+        if (company == null)
+        {
+            return NotFound(new { Message = "Company not found." });
+        }
+
+        var companyDTO = new CompanyProfileDTO
+        {
+            CompanyId = company.CompanyId,
+            Name = company.CompanyName,
+            Description = company.Description,
+            FoundedYear = company.FoundedYear,
+            Address = company.Address,
+            Specialties = company.Specialties,
+            Industries = company.Industries?.Split(", ").ToList() ?? new List<string>(),
+            Location = company.Location,
+            Website = company.Website,
+            Verified = company.Verified ? 1 : 0,
+            CompanySize = company.CompanySize,
+            ContactInfo = company.ContactInfo,
+            CoreExpertise = company.CoreExpertise?.Split(", ").ToList() ?? new List<string>(),
+            Projects = company.Projects.Select(p => new ProjectDTO
+            {
+                ProjectId = p.ProjectId,
+                ProjectName = p.ProjectName,
+                Description = p.Description,
+                TechnologiesUsed = p.TechnologiesUsed.Split(", ").ToList(),
+                Industry = p.Industry,
+                ClientType = p.ClientType,
+                Impact = p.Impact,
+                Date = p.Date,
+                ProjectUrl = p.ProjectUrl
+            }).ToList()
+        };
+
+        return Ok(companyDTO);
+    }
+
 
     [HttpPost("ModifyCompanyProfile")]
     //[Authorize]
