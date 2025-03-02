@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using CompanyHubService.Validation;
 
 namespace CompanyHubService.DTOs
 {
@@ -24,6 +25,9 @@ namespace CompanyHubService.DTOs
         public int CompanySize { get; set; }
         public string ContactInfo { get; set; }
         public string CoreExpertise { get; set; }
+
+        [Required]
+        [EnsureAtLeastOneProject]
         public List<ProjectDTO>? Portfolio { get; set; } // List of projects
 
     }
