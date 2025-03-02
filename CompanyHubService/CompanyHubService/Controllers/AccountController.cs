@@ -1,4 +1,5 @@
-﻿using CompanyHubService.DTOs;
+﻿using CompanyHubService.Data;
+using CompanyHubService.DTOs;
 using CompanyHubService.Models;
 using CompanyHubService.Services;
 using CompanyHubService.Views;
@@ -6,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 
@@ -18,12 +20,15 @@ public class AccountController : ControllerBase
     private readonly EmailService _emailService;
     private readonly UserManager<User> _userManager;
 
-    public AccountController(AuthService authService, UserService userService, UserManager<User> userManager, EmailService emailService)
+    private readonly CompanyHubDbContext _dbContext;
+
+    public AccountController(AuthService authService, UserService userService, UserManager<User> userManager, EmailService emailService, CompanyHubDbContext dbContext)
     {
         _authService = authService;
         _userService = userService;
         _userManager = userManager;
         _emailService = emailService;
+        _dbContext = dbContext;
     }
 
     [HttpPost("Register")]
@@ -73,6 +78,29 @@ public class AccountController : ControllerBase
             return Unauthorized(new { Message = "Account is locked out. Please try again later." });
         }
 
+
+        var companies = await _dbContext.UserCompanies
+        .Where(uc => uc.UserId == user.Id)
+        .Include(uc => uc.Company)
+        .Select(uc => new CompanyDTO
+        {
+            CompanyId = uc.Company.CompanyId,
+            CompanyName = uc.Company.CompanyName
+        })
+        .ToListAsync();
+
+
+        var projects = await _dbContext.UserCompanies
+        .Where(uc => uc.UserId == user.Id)
+        .Include(uc => uc.Company)
+        .ThenInclude(c => c.Projects)
+        .SelectMany(uc => uc.Company.Projects.Select(p => new ProjectDTO // ✅ Explicit Mapping
+        {
+            ProjectId = p.ProjectId,
+            ProjectName = p.ProjectName
+        }))
+        .ToListAsync();
+
         var userDTO = new UserDTO
         {
             Id = user.Id,
@@ -80,7 +108,8 @@ public class AccountController : ControllerBase
             LastName = user.LastName,
             Email = user.Email,
             PhoneNumber = user.PhoneNumber,
-            // Role???
+            Companies = companies,
+            Projects = projects
         };
 
         return Ok(new
