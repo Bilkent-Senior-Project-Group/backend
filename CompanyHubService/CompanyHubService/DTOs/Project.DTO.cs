@@ -4,6 +4,8 @@ namespace CompanyHubService.DTOs
 {
     public class ProjectDTO
     {
+        public Guid ProjectId { get; set; }
+
         [JsonPropertyName("project_name")]  // Explicitly map JSON field
         public string ProjectName { get; set; }
         public string Description { get; set; }

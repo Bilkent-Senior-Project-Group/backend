@@ -22,7 +22,7 @@ namespace CompanyHubService.DTOs
         public int CompanySize { get; set; }
         public string ContactInfo { get; set; }
         public string CoreExpertise { get; set; }
-        public List<ProjectDTO> Portfolio { get; set; } // List of projects
+        public List<ProjectDTO>? Portfolio { get; set; } // List of projects
 
     }
 

@@ -8,5 +8,11 @@ namespace CompanyHubService.DTOs
         public string Email { get; set; }
         public string PhoneNumber { get; set; }
 
+        // ✅ List of companies the user belongs to
+        public List<CompanyDTO> Companies { get; set; } = new List<CompanyDTO>();
+
+        // ✅ List of projects the user is associated with
+        public List<ProjectDTO> Projects { get; set; } = new List<ProjectDTO>();
+
     }
 }
