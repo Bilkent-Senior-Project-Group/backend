@@ -207,4 +207,27 @@ public class CompanyController : ControllerBase
 
         return BadRequest(new { message = "Failed to add companies." });
     }
+
+    [HttpPost("ApproveCompany/{companyId}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> ApproveCompany(Guid companyId)
+    {
+        var company = await dbContext.Companies.FindAsync(companyId);
+
+        if (company == null)
+        {
+            return NotFound(new { Message = "Company not found." });
+        }
+
+        if (company.Verified)
+        {
+            return BadRequest(new { Message = "Company is already approved." });
+        }
+
+        company.Verified = true;
+        await dbContext.SaveChangesAsync();
+
+        return Ok(new { Message = $"Company '{company.CompanyName}' has been approved." });
+    }
+
 }
