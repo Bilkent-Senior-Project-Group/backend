@@ -8,6 +8,8 @@ namespace CompanyHubService.DTOs
         [Required]
         public string CompanyName { get; set; } // Company name is required
 
+        public string Description { get; set; }
+
         [Required]
         [Range(1800, 2100)] // Foundation year must be within a realistic range
         public int FoundedYear { get; set; }

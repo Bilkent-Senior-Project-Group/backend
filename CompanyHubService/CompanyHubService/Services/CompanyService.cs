@@ -29,6 +29,7 @@ namespace CompanyHubService.Services
             {
                 CompanyId = Guid.NewGuid(),
                 CompanyName = request.CompanyName,
+                Description = request.Description,
                 FoundedYear = request.FoundedYear,
                 Address = request.Address,
                 Specialties = request.Specialties,
@@ -292,7 +293,7 @@ namespace CompanyHubService.Services
                 await transaction.CommitAsync();
 
                 Console.WriteLine("All companies and projects added successfully.");
-                
+
                 var mappedCompaniesForKafka = companiesToInsert.Select(company => new
                 {
                     id = company.CompanyId,
@@ -318,8 +319,8 @@ namespace CompanyHubService.Services
                     // Create the Kafka message
                     var message = new Message<string, string>
                     {
-                        Key = DateTime.Now.ToString(), 
-                        Value = messageValue                          
+                        Key = DateTime.Now.ToString(),
+                        Value = messageValue
                     };
 
                     var result = await _kafkaProducer.ProduceAsync("addBulkCompanies", message);

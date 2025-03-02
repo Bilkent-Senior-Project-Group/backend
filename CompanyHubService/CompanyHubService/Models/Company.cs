@@ -12,6 +12,8 @@ namespace CompanyHubService.Models
 
         [Required]
         public string CompanyName { get; set; }
+
+        public string Description { get; set; }
         public int FoundedYear { get; set; }
         public int CompanySize { get; set; }
         public string Address { get; set; }

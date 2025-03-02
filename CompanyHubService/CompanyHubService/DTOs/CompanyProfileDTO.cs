@@ -12,6 +12,8 @@ namespace CompanyHubService.DTOs
         [Required]
         public string Name { get; set; }
 
+        public string Description { get; set; }
+
         [Required]
         public string Specialties { get; set; }
 
