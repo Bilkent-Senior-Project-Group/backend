@@ -1,7 +1,9 @@
 using System.Security.Claims;
 using CompanyHubService.DTOs;
+using CompanyHubService.Models;
 using CompanyHubService.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 [Route("api/[controller]")]
@@ -11,10 +13,13 @@ public class CompanyController : ControllerBase
     private readonly CompanyService companyService;
     private readonly UserService userService;
 
-    public CompanyController(CompanyService companyService, UserService userService)
+    private readonly UserManager<User> userManager;
+
+    public CompanyController(CompanyService companyService, UserService userService, UserManager<User> userManager)
     {
         this.companyService = companyService;
         this.userService = userService;
+        this.userManager = userManager;
     }
 
     // This is the one where the root user creates/adds a company by himself/herself
@@ -34,8 +39,15 @@ public class CompanyController : ControllerBase
             return Unauthorized(new { Message = "User ID not found in token." });
         }
 
+        var user = await userManager.FindByIdAsync(userId);
+
+        if (!user.EmailConfirmed) // ✅ Check if email is confirmed
+        {
+            return BadRequest(new { Message = "Your email must be confirmed before creating a company." });
+        }
+
         // Define the role as CompanyAdmin for the creator
-        var roleId = "e9fe2584-94a2-4c37-90d8-437041c07ab8"; //ADMIN
+        var roleId = "e9fe2584-94a2-4c37-90d8-437041c07ab8"; //ADMIN (we might )
                                                              // 
 
 

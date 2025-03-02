@@ -64,7 +64,6 @@ namespace CompanyHubService.Controllers
         }
 
 
-
         [HttpPost("AddUserToCompany")]
         public async Task<IActionResult> AddUserToCompany(string userId, string companyId, string roleId)
         {
@@ -103,6 +102,21 @@ namespace CompanyHubService.Controllers
             return Ok(notifications);
         }
 
+        [HttpPost("ApproveUser/{userId}")]
+        [Authorize(Roles = "Admin")] // Only admins can approve users
+        public async Task<IActionResult> ApproveUser(string userId)
+        {
+            var user = await userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return NotFound(new { Message = "User not found." });
+            }
+
+            user.EmailConfirmed = true;
+            await userManager.UpdateAsync(user);
+
+            return Ok(new { Message = "User email confirmed successfully." });
+        }
 
     }
 }

@@ -12,10 +12,13 @@ public class AuthService
     private readonly UserManager<User> _userManager;
     private readonly SignInManager<User> _signInManager;
 
-    public AuthService(UserManager<User> userManager, SignInManager<User> signInManager)
+    private readonly RoleManager<IdentityRole> _roleManager;
+
+    public AuthService(UserManager<User> userManager, SignInManager<User> signInManager, RoleManager<IdentityRole> roleManager)
     {
         _userManager = userManager;
         _signInManager = signInManager;
+        _roleManager = roleManager;
     }
 
     public async Task<IdentityResult> RegisterUserAsync(RegisterViewModel model)
@@ -29,10 +32,59 @@ public class AuthService
             PhoneNumber = model.Phone
 
         };
+
         var password = model.Password;
-        return await _userManager.CreateAsync(user, password);
+        var result = await _userManager.CreateAsync(user, password);
+
+        if (!result.Succeeded)
+        {
+            return result;
+        }
+
+        if (!await _roleManager.RoleExistsAsync("Root"))
+        {
+            await _roleManager.CreateAsync(new IdentityRole("Root"));
+        }
+
+        var roleResult = await _userManager.AddToRoleAsync(user, "Root");
+
+        return roleResult;
+
+
     }
 
+
+    /*public async Task<IdentityResult> RegisterUserAsyncAdmin(RegisterViewModel model)
+    {
+        User user = new User
+        {
+            FirstName = model.FirstName,
+            LastName = model.LastName,
+            Email = model.Email,
+            UserName = model.Username,
+            PhoneNumber = model.Phone
+
+        };
+
+        var password = model.Password;
+        var result = await _userManager.CreateAsync(user, password);
+
+        if (!result.Succeeded)
+        {
+            return result;
+        }
+
+        if (!await _roleManager.RoleExistsAsync("Admin"))
+        {
+            await _roleManager.CreateAsync(new IdentityRole("Admin"));
+        }
+
+        var roleResult = await _userManager.AddToRoleAsync(user, "Admin");
+
+        return roleResult;
+
+
+    }*/
 
 
     public async Task<(SignInResult, string)> LoginUserAsync(string email, string password)
@@ -69,7 +121,7 @@ public class AuthService
         new Claim(ClaimTypes.Name, user.UserName)
         };
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("JWT_SECRET_PLACEHOLDER")); 
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("JWT_SECRET_PLACEHOLDER"));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
