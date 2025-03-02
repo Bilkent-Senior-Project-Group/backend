@@ -131,8 +131,24 @@ public class CompanyController : ControllerBase
 
     //This is the one where company is added from a given json file with muitple companies
     [HttpPost("BulkAddCompanies")]
-    public async Task<IActionResult> BulkAddCompanies([FromBody] BulkCompanyInsertDTO bulkCompanies)
+    public async Task<IActionResult> BulkAddCompanies([FromBody] Dictionary<string, CompanyProfileDTO> jsonCompanies)
     {
+        if (jsonCompanies == null || jsonCompanies.Count == 0)
+        {
+            return BadRequest(new { message = "No companies found in the request." });
+        }
+
+        // Convert dictionary to a list of CompanyProfileDTO
+        var bulkCompanies = new BulkCompanyInsertDTO
+        {
+            Companies = jsonCompanies.Select(entry =>
+            {
+                var companyDto = entry.Value;
+                companyDto.Website = entry.Key;  // The JSON key is the website
+                return companyDto;
+            }).ToList()
+        };
+
         var result = await companyService.BulkAddCompaniesAsync(bulkCompanies);
 
         if (result)
@@ -140,6 +156,4 @@ public class CompanyController : ControllerBase
 
         return BadRequest(new { message = "Failed to add companies." });
     }
-
-
 }
