@@ -18,7 +18,16 @@ namespace CompanyHubService.DTOs
         [JsonPropertyName("client_type")]  // Explicitly map JSON field
         public string ClientType { get; set; }
         public string Impact { get; set; }
-        public string Date { get; set; }
+        public DateTime StartDate { get; set; }
+
+        public DateTime CompletionDate { get; set; }
+
+        public bool IsOnCompedia { get; set; }
+
+        public bool IsCompleted { get; set; }
+
+        public CompanyDTO ClientCompany { get; set; }
+        public CompanyDTO ProviderCompany { get; set; }
 
         [JsonPropertyName("project_url")]  // Explicitly map JSON field
         public string ProjectUrl { get; set; }

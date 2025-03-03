@@ -62,19 +62,32 @@ namespace CompanyHubService.Services
                 var projects = request.Portfolio.Select(p => new Project
                 {
                     ProjectId = Guid.NewGuid(),
-                    CompanyId = company.CompanyId,
                     ProjectName = p.ProjectName,
                     Description = p.Description,
                     TechnologiesUsed = string.Join(", ", p.TechnologiesUsed),
                     Industry = p.Industry,
                     ClientType = p.ClientType,
                     Impact = p.Impact,
-                    Date = p.Date,
+                    StartDate = p.StartDate,
+                    CompletionDate = p.CompletionDate,
+                    IsOnCompedia = false,
+                    IsCompleted = p.IsCompleted,
                     ProjectUrl = p.ProjectUrl
                 }).ToList();
 
                 _dbContext.Projects.AddRange(projects);
                 await _dbContext.SaveChangesAsync();
+
+                var projectCompanies = projects.Select(p => new ProjectCompany
+                {
+                    ProjectId = p.ProjectId,
+                    ClientCompanyId = company.CompanyId,
+                    ProviderCompanyId = null
+                }).ToList();
+
+                _dbContext.ProjectCompanies.AddRange(projectCompanies);
+                await _dbContext.SaveChangesAsync();
+
             }
 
             return true;
@@ -131,14 +144,16 @@ namespace CompanyHubService.Services
                         var project = new Project
                         {
                             ProjectId = Guid.NewGuid(),
-                            CompanyId = company.CompanyId,
                             ProjectName = projectDto.ProjectName,
                             Description = projectDto.Description,
                             TechnologiesUsed = string.Join(", ", projectDto.TechnologiesUsed),
                             Industry = projectDto.Industry,
                             ClientType = projectDto.ClientType,
                             Impact = projectDto.Impact,
-                            Date = projectDto.Date,
+                            StartDate = projectDto.StartDate,
+                            CompletionDate = projectDto.CompletionDate,
+                            IsOnCompedia = false,
+                            IsCompleted = projectDto.IsCompleted,
                             ProjectUrl = projectDto.ProjectUrl
                         };
 
@@ -240,6 +255,7 @@ namespace CompanyHubService.Services
 
                 var companiesToInsert = new List<Company>();
                 var projectsToInsert = new List<Project>();
+                var projectCompaniesToInsert = new List<ProjectCompany>();
 
                 foreach (var companyDto in bulkCompanies.Companies)
                 {
@@ -270,14 +286,13 @@ namespace CompanyHubService.Services
                             var project = new Project
                             {
                                 ProjectId = Guid.NewGuid(),
-                                CompanyId = companyId,
                                 ProjectName = projectDto.ProjectName,
                                 Description = projectDto.Description,
                                 TechnologiesUsed = string.Join(", ", projectDto.TechnologiesUsed ?? new List<string>()),
                                 Industry = projectDto.Industry,
                                 ClientType = projectDto.ClientType,
                                 Impact = projectDto.Impact,
-                                Date = projectDto.Date,
+                                StartDate = projectDto.StartDate,
                                 ProjectUrl = projectDto.ProjectUrl
                             };
 
@@ -286,9 +301,29 @@ namespace CompanyHubService.Services
                     }
                 }
 
+                foreach (var project in projectsToInsert)
+                {
+                    var clientCompanyId = companiesToInsert
+                        .Where(c => c.CompanyId == project.ProjectCompany.ClientCompanyId)
+                        .Select(c => c.CompanyId)
+                        .FirstOrDefault();
+
+                    if (clientCompanyId != Guid.Empty) // Ensure a valid ID is found
+                    {
+                        projectCompaniesToInsert.Add(new ProjectCompany
+                        {
+                            ProjectId = project.ProjectId,
+                            ClientCompanyId = clientCompanyId,
+                            ProviderCompanyId = null // Or assign a valid provider if available
+                        });
+                    }
+                }
+
+
                 // Bulk Insert
                 await _dbContext.Companies.AddRangeAsync(companiesToInsert);
                 await _dbContext.Projects.AddRangeAsync(projectsToInsert);
+                await _dbContext.ProjectCompanies.AddRangeAsync(projectCompaniesToInsert);
                 await _dbContext.SaveChangesAsync();
                 await transaction.CommitAsync();
 
@@ -303,10 +338,11 @@ namespace CompanyHubService.Services
                     industries = company.Industries,
                     location = company.Location,
                     technologies_used = projectsToInsert
-                            .Where(p => p.CompanyId == company.CompanyId)
-                            .Select(p => p.TechnologiesUsed)
-                            .Distinct()
-                            .ToList(),
+                    .Where(p => projectCompaniesToInsert
+                        .Any(pc => pc.ProjectId == p.ProjectId && pc.ClientCompanyId == company.CompanyId))
+                    .Select(p => p.TechnologiesUsed)
+                    .Distinct()
+                    .ToList(),
                     company_size = company.CompanySize,
                     founded_year = company.FoundedYear
                 }).ToList();

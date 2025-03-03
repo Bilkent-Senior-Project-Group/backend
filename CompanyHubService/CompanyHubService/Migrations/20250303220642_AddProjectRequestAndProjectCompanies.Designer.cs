@@ -4,6 +4,7 @@ using CompanyHubService.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CompanyHubService.Migrations
 {
     [DbContext(typeof(CompanyHubDbContext))]
-    partial class CompanyHubDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250303220642_AddProjectRequestAndProjectCompanies")]
+    partial class AddProjectRequestAndProjectCompanies
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -225,7 +228,7 @@ namespace CompanyHubService.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid?>("CompanyId")
+                    b.Property<Guid>("CompanyId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CompletionDate")
@@ -254,6 +257,7 @@ namespace CompanyHubService.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ProjectUrl")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("StartDate")
@@ -602,7 +606,9 @@ namespace CompanyHubService.Migrations
                 {
                     b.HasOne("CompanyHubService.Models.Company", null)
                         .WithMany("Projects")
-                        .HasForeignKey("CompanyId");
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.ProjectCompany", b =>
