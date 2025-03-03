@@ -103,8 +103,21 @@ public class CompanyController : ControllerBase
                 Industry = p.Industry,
                 ClientType = p.ClientType,
                 Impact = p.Impact,
-                Date = p.Date,
-                ProjectUrl = p.ProjectUrl
+                StartDate = p.StartDate,
+                CompletionDate = p.CompletionDate,
+                IsOnCompedia = p.IsOnCompedia,
+                IsCompleted = p.IsCompleted,
+                ProjectUrl = p.ProjectUrl,
+                ClientCompany = new CompanyDTO
+                {
+                    CompanyId = p.ProjectCompany.ClientCompany.CompanyId,
+                    CompanyName = p.ProjectCompany.ClientCompany.CompanyName
+                },
+                ProviderCompany = p.ProjectCompany.ProviderCompany != null ? new CompanyDTO
+                {
+                    CompanyId = p.ProjectCompany.ProviderCompany.CompanyId,
+                    CompanyName = p.ProjectCompany.ProviderCompany.CompanyName
+                } : null
             }).ToList()
         };
 

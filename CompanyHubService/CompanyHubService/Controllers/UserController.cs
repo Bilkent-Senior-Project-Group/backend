@@ -84,7 +84,9 @@ namespace CompanyHubService.Controllers
             {
                 await notificationService.CreateNotificationAsync(
                 recipientId: userId,
-                message: "You have been added to a new company."
+                message: "You have been added to a new company.",
+                notificationType: "User",
+                url: null
                 );
 
                 return Ok(new { Message = "User added and notified." });
