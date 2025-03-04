@@ -12,12 +12,14 @@ public class NotificationService
         _dbContext = dbContext;
     }
 
-    public async Task CreateNotificationAsync(string recipientId, string message)
+    public async Task CreateNotificationAsync(string recipientId, string message, string notificationType, string url)
     {
         var notification = new Notification
         {
             RecipientId = recipientId,
-            Message = message
+            Message = message,
+            NotificationType = notificationType,
+            Url = url
         };
 
         _dbContext.Notifications.Add(notification);

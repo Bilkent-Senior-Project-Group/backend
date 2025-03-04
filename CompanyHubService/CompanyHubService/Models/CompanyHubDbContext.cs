@@ -30,6 +30,10 @@ namespace CompanyHubService.Data
 
         public DbSet<Notification> Notifications { get; set; }
 
+        public DbSet<ProjectRequest> ProjectRequests { get; set; }
+        public DbSet<ProjectCompany> ProjectCompanies { get; set; }
+
+
 
 
         // Configuring relationships and table properties
@@ -88,11 +92,37 @@ namespace CompanyHubService.Data
             modelBuilder.Entity<Project>()
                 .HasKey(p => p.ProjectId);
 
-            modelBuilder.Entity<Project>()
-                .HasOne(p => p.Company)
-                .WithMany(c => c.Projects)
-                .HasForeignKey(p => p.CompanyId)
-                .OnDelete(DeleteBehavior.Cascade);
+            // One-to-One Relationship
+            modelBuilder.Entity<ProjectCompany>()
+                .HasOne(pc => pc.Project)
+                .WithOne(p => p.ProjectCompany)
+                .HasForeignKey<ProjectCompany>(pc => pc.ProjectId)
+                .OnDelete(DeleteBehavior.Restrict); // Here we might also use Cascade but in order to prevent any error during migration i used Restrict
+
+            modelBuilder.Entity<ProjectCompany>()
+                .HasOne(pc => pc.ClientCompany)
+                .WithMany()
+                .HasForeignKey(pc => pc.ClientCompanyId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ProjectCompany>()
+                .HasOne(pc => pc.ProviderCompany)
+                .WithMany()
+                .HasForeignKey(pc => pc.ProviderCompanyId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<ProjectRequest>()
+            .HasOne(pr => pr.ClientCompany)
+            .WithMany()
+            .HasForeignKey(pr => pr.ClientCompanyId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+
+            modelBuilder.Entity<ProjectRequest>()
+            .HasOne(pr => pr.ProviderCompany)
+            .WithMany()
+            .HasForeignKey(pr => pr.ProviderCompanyId)
+            .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }
