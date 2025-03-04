@@ -6,12 +6,14 @@ using CompanyHubService.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
 [Route("api/[controller]")]
 [ApiController]
 public class CompanyController : ControllerBase
 {
+    private readonly IPdfExtractionService pdfExtractionService;
     private readonly CompanyService companyService;
     private readonly UserService userService;
 
@@ -19,12 +21,37 @@ public class CompanyController : ControllerBase
 
     private readonly CompanyHubDbContext dbContext;
 
-    public CompanyController(CompanyService companyService, UserService userService, UserManager<User> userManager, CompanyHubDbContext dbContext)
+    public CompanyController(IPdfExtractionService pdfExtractionService, CompanyService companyService, UserService userService, UserManager<User> userManager, CompanyHubDbContext dbContext)
     {
+        this.pdfExtractionService = pdfExtractionService;
         this.companyService = companyService;
         this.userService = userService;
         this.userManager = userManager;
         this.dbContext = dbContext;
+    }
+
+    [HttpPost("extract-from-pdf")]
+    //[Authorize]
+    public async Task<IActionResult> ExtractFromPdf(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest("No file uploaded");
+
+        if (!file.ContentType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase))
+            return BadRequest("File must be a PDF");
+
+        try
+        {
+            using (var stream = file.OpenReadStream())
+            {
+                var extractedData = await pdfExtractionService.ExtractCompanyDataFromPdf(stream);
+                return Ok(extractedData);
+            }
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"An error occurred: {ex.Message}");
+        }
     }
 
     // This is the one where the root user creates/adds a company by himself/herself
