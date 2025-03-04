@@ -7,8 +7,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Encodings.Web;
+using Microsoft.AspNetCore.Mvc.Abstractions;
 using System.Threading.Tasks;
 
 [ApiController]
@@ -22,13 +24,18 @@ public class AccountController : ControllerBase
 
     private readonly CompanyHubDbContext _dbContext;
 
-    public AccountController(AuthService authService, UserService userService, UserManager<User> userManager, EmailService emailService, CompanyHubDbContext dbContext)
+    private readonly IUrlHelperFactory _urlHelperFactory;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+
+    public AccountController(AuthService authService, UserService userService, UserManager<User> userManager, EmailService emailService, CompanyHubDbContext dbContext, IUrlHelperFactory iurlhelperfactory, IHttpContextAccessor httpContextAccessor)
     {
         _authService = authService;
         _userService = userService;
         _userManager = userManager;
         _emailService = emailService;
         _dbContext = dbContext;
+        _httpContextAccessor = httpContextAccessor;
+        _urlHelperFactory = iurlhelperfactory;
     }
 
     [HttpPost("Register")]
@@ -39,15 +46,31 @@ public class AccountController : ControllerBase
             return BadRequest(ModelState);
         }
 
+        // ✅ Create an ActionContext properly
+        var actionContext = new ActionContext
+        {
+            HttpContext = _httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is null."),
+            RouteData = new RouteData(),
+            ActionDescriptor = new ActionDescriptor()
+        };
 
+        // ✅ Create a UrlHelper instance
+        var urlHelper = _urlHelperFactory.GetUrlHelper(actionContext);
+
+        // ✅ Ensure `httpContext` is not null before passing
+        var httpContext = _httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is null.");
+
+        // ✅ Pass `urlHelper` and `httpContext`
         var result = await _authService.RegisterUserAsync(model);
+
         if (result.Succeeded)
         {
-            return Ok(new { Message = "Registration successful!" });
+            return Ok(new { Message = "Registration successful! Please verify your email." });
         }
 
         return BadRequest(result.Errors);
     }
+
 
 
     [HttpPost("Login")]
@@ -200,6 +223,30 @@ public class AccountController : ControllerBase
         return Ok(new { message = "Password reset successful!" });
     }
 
+    [HttpGet("ConfirmEmail")]
+    public async Task<IActionResult> ConfirmEmail(string userId, string token)
+    {
+        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(token))
+        {
+            return BadRequest("Invalid email confirmation parameters.");
+        }
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            return NotFound("User not found.");
+        }
+
+        var result = await _userManager.ConfirmEmailAsync(user, token);
+        if (result.Succeeded)
+        {
+            return Ok("Email confirmed successfully!");
+        }
+        else
+        {
+            return BadRequest("Email confirmation failed.");
+        }
+    }
 
 
 

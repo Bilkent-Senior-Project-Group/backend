@@ -10,6 +10,8 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using CompanyHubService.Seeders;
 using Confluent.Kafka;
+using Microsoft.AspNetCore.Mvc.Routing;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 
 
 
@@ -72,7 +74,9 @@ builder.Services.AddScoped<RoleSeeder>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddTransient<EmailService>();
 builder.Services.AddScoped<ProjectService>();
-
+builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+builder.Services.AddSingleton<IUrlHelperFactory, UrlHelperFactory>();
+builder.Services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();
 
 
 builder.Services.AddControllers();
@@ -110,9 +114,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseRouting();
-
 app.UseAuthentication();
+
+app.UseRouting();
 
 app.UseAuthorization();
 

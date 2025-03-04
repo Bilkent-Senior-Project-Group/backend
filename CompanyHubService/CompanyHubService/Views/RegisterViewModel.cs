@@ -24,5 +24,7 @@ namespace CompanyHubService.Views
         [Required(ErrorMessage = "Username is required.")]
         [RegularExpression(@"^[a-zA-Z0-9]+$", ErrorMessage = "Username can only contain letters and numbers.")]
         public String Username { get; set; }
+
+
     }
 }

@@ -49,6 +49,7 @@ public class CompanyController : ControllerBase
         if (!user.EmailConfirmed) // ✅ Check if email is confirmed
         {
             return BadRequest(new { Message = "Your email must be confirmed before creating a company." });
+            // send mail here
         }
 
         // Define the role as CompanyAdmin for the creator
