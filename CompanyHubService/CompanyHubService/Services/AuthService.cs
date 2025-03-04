@@ -29,15 +29,6 @@ public class AuthService
 
     public async Task<IdentityResult> RegisterUserAsync(RegisterViewModel model)
     {
-        if (urlHelper == null)
-        {
-            throw new InvalidOperationException("🚨 `urlHelper` is null in RegisterUserAsync.");
-        }
-
-        if (httpContext == null)
-        {
-            throw new InvalidOperationException("HttpContext cannot be null.");
-        }
 
         User user = new User
         {
