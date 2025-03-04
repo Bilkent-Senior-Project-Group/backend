@@ -1,7 +1,7 @@
 name: Build and deploy ASP.Net Core app to Azure Web App - compedia
 
 env:
-  PROJECT_PATH: 'BACKEND/CompanyHubService/CompanyHubService/CompanyHubService.csproj'
+  PROJECT_PATH: '../CompanyHubService/CompanyHubService/CompanyHubService.csproj'
 
 on:
   push:
