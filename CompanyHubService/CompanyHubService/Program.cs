@@ -81,7 +81,6 @@ builder.Services.AddScoped<CompanyService>();
 builder.Services.AddScoped<RoleSeeder>();
 builder.Services.AddScoped<AdminService>(); 
 builder.Services.AddTransient<EmailService>();
-builder.Services.AddScoped<IPdfExtractionService, PdfExtractionService>();
 builder.Services.AddScoped<ProjectService>();
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.AddSingleton<IUrlHelperFactory, UrlHelperFactory>();
