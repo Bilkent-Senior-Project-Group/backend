@@ -66,6 +66,7 @@ var kafkaConfig = new ProducerConfig
 
 // Register Kafka producer as a singleton service
 builder.Services.AddSingleton<IProducer<string, string>>(new ProducerBuilder<string, string>(kafkaConfig).Build());
+builder.Services.AddHttpClient();
 
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<AuthService>();

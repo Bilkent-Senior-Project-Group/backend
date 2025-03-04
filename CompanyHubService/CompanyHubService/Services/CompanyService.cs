@@ -5,6 +5,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
 using Confluent.Kafka;
 using System.Text.Json;
+using System.Net.Http;
+using Newtonsoft.Json;
+using System.Text;
 
 namespace CompanyHubService.Services
 {
@@ -13,12 +16,14 @@ namespace CompanyHubService.Services
         private CompanyHubDbContext _dbContext { get; set; }
         private UserService userService { get; set; }
         private readonly IProducer<string, string> _kafkaProducer;
+        private readonly IHttpClientFactory _httpClientFactory;
 
-        public CompanyService(CompanyHubDbContext dbContext, UserService userService, IProducer<string, string> kafkaProducer)
+        public CompanyService(CompanyHubDbContext dbContext, UserService userService, IProducer<string, string> kafkaProducer, IHttpClientFactory httpClientFactory)
         {
             _dbContext = dbContext;
             this.userService = userService;
             _kafkaProducer = kafkaProducer;
+            _httpClientFactory = httpClientFactory;
         }
 
         //used when a new user creates a company.
@@ -186,7 +191,7 @@ namespace CompanyHubService.Services
             try
             {
                 // Serialize the DTO to JSON
-                var messageValue = JsonSerializer.Serialize(companyProfileDTO);
+                var messageValue = System.Text.Json.JsonSerializer.Serialize(companyProfileDTO);
 
                 // Create the Kafka message
                 var message = new Message<string, string>
@@ -350,7 +355,7 @@ namespace CompanyHubService.Services
                 try
                 {
                     // Serialize the DTO to JSON
-                    var messageValue = JsonSerializer.Serialize(mappedCompaniesForKafka);
+                    var messageValue = System.Text.Json.JsonSerializer.Serialize(mappedCompaniesForKafka);
 
                     // Create the Kafka message
                     var message = new Message<string, string>
@@ -375,6 +380,36 @@ namespace CompanyHubService.Services
                 await transaction.RollbackAsync();
                 Console.WriteLine($"Error during bulk insert: {ex.Message}");
                 return false;
+            }
+        }
+
+        public async Task<object> FreeTextSearchAsync(string searchQuery)
+        {
+            // Define FastAPI URL
+            string fastApiUrl = "http://127.0.0.1:8000/search";  // Adjust if needed
+
+            // Prepare request body
+            var payload = new { query = searchQuery };
+            var jsonPayload = JsonConvert.SerializeObject(payload);
+            var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+
+            try
+            {
+                // Send POST request to FastAPI
+                var client = _httpClientFactory.CreateClient();
+                HttpResponseMessage response = await client.PostAsync(fastApiUrl, content);
+
+                // Ensure success response
+                response.EnsureSuccessStatusCode();
+
+                // Parse response
+                string jsonResponse = await response.Content.ReadAsStringAsync();
+                return JsonConvert.DeserializeObject<object>(jsonResponse);
+            }
+            catch (Exception ex)
+            {
+                // Handle errors
+                return new { error = "Failed to connect to FastAPI", details = ex.Message };
             }
         }
     }

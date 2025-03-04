@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using iText.Layout.Element;
 
 [Route("api/[controller]")]
 [ApiController]
@@ -269,6 +270,19 @@ public class CompanyController : ControllerBase
         await dbContext.SaveChangesAsync();
 
         return Ok(new { Message = $"Company '{company.CompanyName}' has been approved." });
+    }
+
+    [HttpPost("FreeTextSearch")]
+    public async Task<IActionResult> FreeTextSearch(string textQuery)
+    {
+        if (string.IsNullOrEmpty(textQuery))
+        {
+            return BadRequest(new { Message = "Empty search" });
+        }
+
+        var searchResult = await companyService.FreeTextSearchAsync(textQuery);
+
+        return Ok(searchResult);
     }
 
 }
