@@ -72,6 +72,8 @@ builder.Services.AddScoped<RoleSeeder>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddTransient<EmailService>();
 builder.Services.AddScoped<IPdfExtractionService, PdfExtractionService>();
+builder.Services.AddScoped<ProjectService>();
+
 
 
 builder.Services.AddControllers();
