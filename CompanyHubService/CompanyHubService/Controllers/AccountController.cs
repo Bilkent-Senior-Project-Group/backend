@@ -95,49 +95,66 @@ public class AccountController : ControllerBase
         {
             return Unauthorized(new { Message = "Invalid email or password." });
         }
-
         else if (result.IsLockedOut)
         {
             return Unauthorized(new { Message = "Account is locked out. Please try again later." });
         }
 
+        var isAdmin = false;
+        var userDTO = new UserDTO();
+        if ( user.Id != "9f4d21df-e8ab-473a-889d-d2eeaee28b32"){
+            var companies = await _dbContext.UserCompanies
+            .Where(uc => uc.UserId == user.Id)
+            .Include(uc => uc.Company)
+            .Select(uc => new CompanyDTO
+            {
+                CompanyId = uc.Company.CompanyId,
+                CompanyName = uc.Company.CompanyName
+            })
+            .ToListAsync();
 
-        var companies = await _dbContext.UserCompanies
-        .Where(uc => uc.UserId == user.Id)
-        .Include(uc => uc.Company)
-        .Select(uc => new CompanyDTO
-        {
-            CompanyId = uc.Company.CompanyId,
-            CompanyName = uc.Company.CompanyName
-        })
-        .ToListAsync();
 
+            var projects = await _dbContext.UserCompanies
+            .Where(uc => uc.UserId == user.Id)
+            .Include(uc => uc.Company)
+            .ThenInclude(c => c.Projects)
+            .SelectMany(uc => uc.Company.Projects.Select(p => new ProjectDTO // ✅ Explicit Mapping
+            {
+                ProjectId = p.ProjectId,
+                ProjectName = p.ProjectName
+            }))
+            .ToListAsync();
 
-        var projects = await _dbContext.UserCompanies
-        .Where(uc => uc.UserId == user.Id)
-        .Include(uc => uc.Company)
-        .ThenInclude(c => c.Projects)
-        .SelectMany(uc => uc.Company.Projects.Select(p => new ProjectDTO // ✅ Explicit Mapping
-        {
-            ProjectId = p.ProjectId,
-            ProjectName = p.ProjectName
-        }))
-        .ToListAsync();
+            userDTO = new UserDTO
+            {
+                Id = user.Id,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Email = user.Email,
+                PhoneNumber = user.PhoneNumber,
+                Companies = companies,
+                Projects = projects
+            };
+        }
 
-        var userDTO = new UserDTO
-        {
-            Id = user.Id,
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            Email = user.Email,
-            PhoneNumber = user.PhoneNumber,
-            Companies = companies,
-            Projects = projects
-        };
+        else {
+            isAdmin = true;
+            userDTO = new UserDTO
+            {
+                Id = user.Id,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Email = user.Email,
+                PhoneNumber = user.PhoneNumber,
+                Companies = null,
+                Projects = null
+            };
+        }
+        
 
         return Ok(new
         {
-            // Need for message??
+            isAdmin = isAdmin,
             Token = token,
             User = userDTO
         });

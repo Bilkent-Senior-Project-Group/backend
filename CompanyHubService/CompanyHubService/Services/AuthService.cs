@@ -139,14 +139,17 @@ public class AuthService
 
     public string GenerateJwtToken(User user)
     {
-        var claims = new[]
+        var claims = new List<Claim>
         {
-        new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-        new Claim(JwtRegisteredClaimNames.Email, user.Email),
-        new Claim(ClaimTypes.Name, user.UserName)
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id),
+            new Claim(JwtRegisteredClaimNames.Email, user.Email),
+            new Claim(ClaimTypes.Name, user.UserName),
+            // Instead of typ => Admin, use the standard role claim
+            new Claim(ClaimTypes.Role, user.IsAdmin ? "Admin" : "User")
         };
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("m4BvUuv6DReEzE2E1ozNlbXK9er4JRXI"));
+        var key = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes("m4BvUuv6DReEzE2E1ozNlbXK9er4JRXI"));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(

@@ -26,20 +26,27 @@ builder.Services.AddIdentity<User, IdentityRole>()
     .AddEntityFrameworkStores<CompanyHubDbContext>()
     .AddDefaultTokenProviders();
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+builder.Services.AddAuthentication(options =>
+{
+    // Make JWT the default
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = "Compedia",
-            ValidAudience = "CompediaClient",
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("m4BvUuv6DReEzE2E1ozNlbXK9er4JRXI")) // Use the same key as in token generation
-        };
-    });
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = "Compedia",
+        ValidAudience = "CompediaClient",
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes("m4BvUuv6DReEzE2E1ozNlbXK9er4JRXI"))
+    };
+});
+
 
 // Configure Identity options if needed (password settings, lockout, etc.)
 builder.Services.Configure<IdentityOptions>(options =>
@@ -72,7 +79,7 @@ builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<CompanyService>();
 builder.Services.AddScoped<RoleSeeder>();
-builder.Services.AddScoped<NotificationService>();
+builder.Services.AddScoped<AdminService>(); 
 builder.Services.AddTransient<EmailService>();
 builder.Services.AddScoped<IPdfExtractionService, PdfExtractionService>();
 builder.Services.AddScoped<ProjectService>();
