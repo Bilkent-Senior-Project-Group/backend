@@ -15,5 +15,8 @@ namespace CompanyHubService.Models
         //public string Email { get; set; }
         //public string PhoneNumber { get; set; }
         public DateTime SignupDate { get; set; } = DateTime.UtcNow;
+
+        public bool IsAdmin { get; set; }
+
     }
 }

@@ -14,5 +14,9 @@ namespace CompanyHubService.DTOs
         // ✅ List of projects the user is associated with
         public List<ProjectDTO> Projects { get; set; } = new List<ProjectDTO>();
 
+        
+        public bool IsAdmin { get; set; }
+
+
     }
 }
