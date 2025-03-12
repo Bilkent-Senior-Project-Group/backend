@@ -3,18 +3,22 @@ using CompanyHubService.Data;
 using CompanyHubService.Models;
 using CompanyHubService.DTOs;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
+using Newtonsoft.Json;
 
 namespace CompanyHubService.Services
 {
     public class AdminService
     {
         private CompanyHubDbContext _dbContext { get; set; }
-        public AdminService(CompanyHubDbContext dbContext)
+        private UserManager<User> _userManager { get; set; }
+        public AdminService(CompanyHubDbContext dbContext, UserManager<User> userManager)
         {
             _dbContext = dbContext;
+            _userManager = userManager;
         }
 
-      
+
 
         public async Task<List<Company>> CompaniesToBeVerified()
         {
@@ -34,6 +38,21 @@ namespace CompanyHubService.Services
 
             company.Verified = true;
             await _dbContext.SaveChangesAsync();
+
+            var userCompany = await _dbContext.UserCompanies
+            .Where(uc => uc.CompanyId == CompanyId)
+            .OrderBy(uc => uc.AddedAt)
+            .FirstOrDefaultAsync();
+
+            if (userCompany != null)
+            {
+                var user = await _userManager.FindByIdAsync(userCompany.UserId);
+                if (user != null)
+                {
+                    await _userManager.RemoveFromRoleAsync(user, "VerifiedUser");
+                    await _userManager.AddToRoleAsync(user, "Root");
+                }
+            }
 
             return company;
         }
