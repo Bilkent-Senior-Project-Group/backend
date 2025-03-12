@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using iText.Layout.Element;
 namespace CompanyHubService.Controllers
-{   
+{
 
     [Route("api/[controller]")]
     [ApiController]
@@ -61,7 +61,8 @@ namespace CompanyHubService.Controllers
 
         // This is the one where the root user creates/adds a company by himself/herself
         [HttpPost("CreateCompany")]
-        [Authorize]
+        // Both the root user and the verifiedUser, maybe admin too can create a company (Admin can create a company on behalf of a user)
+        [Authorize(Roles = "Root, VerifiedUser, Admin")]
         public async Task<IActionResult> CreateCompany([FromBody] CreateCompanyRequestDTO request)
         {
             if (!ModelState.IsValid)
@@ -78,18 +79,13 @@ namespace CompanyHubService.Controllers
 
             var user = await userManager.FindByIdAsync(userId);
 
-            if (!user.EmailConfirmed) // ✅ Check if email is confirmed
+            if (!user.EmailConfirmed) // This might be unnecessary as the user is already verified
             {
                 return BadRequest(new { Message = "Your email must be confirmed before creating a company." });
-                // send mail here
+                // send mail here (we can send the mail here or in the FRONTEND)
             }
 
-            // Define the role as CompanyAdmin for the creator
-            var roleId = "e9fe2584-94a2-4c37-90d8-437041c07ab8"; //ADMIN (we might )
-                                                                // 
-
-
-            var result = await companyService.CreateCompanyAsync(request, userId, roleId);
+            var result = await companyService.CreateCompanyAsync(request, userId);
 
             if (!result)
             {
@@ -159,7 +155,7 @@ namespace CompanyHubService.Controllers
 
 
         [HttpPost("ModifyCompanyProfile")]
-        //[Authorize]
+        [Authorize(Roles = "Root, Admin")] // Maybe VerifiedUser can modify their company profile too. Admin might be able to modify any company profile
         public async Task<IActionResult> ModifyCompanyProfile(CompanyProfileDTO companyProfileDTO)
         {
             if (!ModelState.IsValid)
@@ -180,9 +176,25 @@ namespace CompanyHubService.Controllers
         }
 
         [HttpGet("GetUsersOfCompany/{companyId}")]
-        [Authorize] // Optional: Ensure only authorized users can access this
+        [Authorize(Roles = "Root, VerifiedUser")] // VerifiedUser should be in the company to see the users
         public async Task<IActionResult> GetUsersOfCompany(Guid companyId)
         {
+            // VerifiedUser should be in the company to see the users
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { Message = "User ID not found in token." });
+            }
+
+            var userCompany = await dbContext.UserCompanies
+                .Where(uc => uc.UserId == userId && uc.CompanyId == companyId)
+                .FirstOrDefaultAsync();
+
+            if (userCompany == null)
+            {
+                return Unauthorized(new { Message = "You are not authorized to view the users of this company." });
+            }
+
             var users = await companyService.GetUsersOfCompanyAsync(companyId);
 
             if (users == null || !users.Any())

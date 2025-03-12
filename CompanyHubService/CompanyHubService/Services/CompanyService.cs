@@ -27,7 +27,7 @@ namespace CompanyHubService.Services
         }
 
         //used when a new user creates a company.
-        public async Task<bool> CreateCompanyAsync(CreateCompanyRequestDTO request, string userId, string roleId)
+        public async Task<bool> CreateCompanyAsync(CreateCompanyRequestDTO request, string userId)
         {
 
             var company = new Company
@@ -55,7 +55,6 @@ namespace CompanyHubService.Services
             {
                 UserId = userId,
                 CompanyId = company.CompanyId,
-                RoleId = roleId
             };
 
             _dbContext.UserCompanies.Add(userCompany);

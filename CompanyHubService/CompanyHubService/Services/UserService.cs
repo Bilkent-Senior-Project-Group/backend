@@ -78,7 +78,6 @@ namespace CompanyHubService.Services
             {
                 UserId = userId,
                 CompanyId = companyId,
-                RoleId = roleId
             };
 
             _dbContext.UserCompanies.Add(userCompany);

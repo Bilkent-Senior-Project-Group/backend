@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
+using System.Net;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,13 +19,15 @@ public class AuthService
     private readonly RoleManager<IdentityRole> _roleManager;
 
     private readonly EmailService _emailService;
+    private readonly IConfiguration _configuration;
 
-    public AuthService(UserManager<User> userManager, SignInManager<User> signInManager, RoleManager<IdentityRole> roleManager, EmailService emailService)
+    public AuthService(UserManager<User> userManager, SignInManager<User> signInManager, RoleManager<IdentityRole> roleManager, EmailService emailService, IConfiguration configuration)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _roleManager = roleManager;
         _emailService = emailService;
+        _configuration = configuration;
     }
 
     public async Task<IdentityResult> RegisterUserAsync(RegisterViewModel model)
@@ -59,7 +62,10 @@ public class AuthService
 
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
 
-        var confirmationLink = $"https://localhost:3000/confirm-email?userId={Uri.EscapeDataString(user.Id)}&token={Uri.EscapeDataString(token)}";
+        var clientUrl = _configuration["AppSettings:ClientUrl"];
+        var encodedToken = WebUtility.UrlEncode(token);
+        var confirmationLink = $"{clientUrl}/confirm-email?userId={user.Id}&token={encodedToken}";
+
 
 
         await _emailService.SendEmailAsync(user.Email, "Confirm Your Email",
@@ -73,14 +79,16 @@ public class AuthService
             <p>{confirmationLink}</p>
         </body>
         </html>
+        <p>{token}</p>
         ");
 
-        if (!await _roleManager.RoleExistsAsync("Root"))
+        if (!await _roleManager.RoleExistsAsync("User"))
         {
-            await _roleManager.CreateAsync(new IdentityRole("Root"));
+            await _roleManager.CreateAsync(new IdentityRole("User"));
         }
 
-        var roleResult = await _userManager.AddToRoleAsync(user, "Root");
+        var roleResult = await _userManager.AddToRoleAsync(user, "User"); // Assign User role
+
 
         return roleResult;
 
@@ -133,7 +141,7 @@ public class AuthService
 
         if (result.Succeeded)
         {
-            var token = GenerateJwtToken(user);
+            var token = await GenerateJwtToken(user);
             return (result, token);
         }
 
@@ -146,23 +154,27 @@ public class AuthService
         await _signInManager.SignOutAsync();
     }
 
-    public string GenerateJwtToken(User user)
+    public async Task<string> GenerateJwtToken(User user)
     {
         var claims = new List<Claim>
         {
             new Claim(JwtRegisteredClaimNames.Sub, user.Id),
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
-            new Claim(ClaimTypes.Name, user.UserName),
-            // Instead of typ => Admin, use the standard role claim
-            new Claim(ClaimTypes.Role, user.IsAdmin ? "Admin" : "User")
+            new Claim(ClaimTypes.Name, user.UserName)
         };
+
+        // 🔹 Correctly await the asynchronous call
+        var roles = await _userManager.GetRolesAsync(user);
+        foreach (var role in roles)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, role)); // ✅ This ensures multiple roles work
+        }
 
         var key = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes("JWT_SECRET_PLACEHOLDER"));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
-
             issuer: "Compedia",
             audience: "CompediaClient",
             claims: claims,
@@ -172,4 +184,5 @@ public class AuthService
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+
 }

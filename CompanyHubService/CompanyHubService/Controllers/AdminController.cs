@@ -38,7 +38,7 @@ namespace CompanyHubService.Controllers
         {
             // Log or breakpoint here
             Console.WriteLine("CompaniesToBeVerified endpoint hit.");
-            
+
             var companies = await _adminService.CompaniesToBeVerified();
 
             if (companies == null)
@@ -51,7 +51,6 @@ namespace CompanyHubService.Controllers
         [HttpPut("VerifyCompany")]
         public async Task<IActionResult> VerifyCompany([FromBody] Guid CompanyId)
         {
-
             var company = await _adminService.VerifyCompany(CompanyId);
             if (company == null)
             {
@@ -60,7 +59,5 @@ namespace CompanyHubService.Controllers
 
             return Ok(new { Message = "Company verified." });
         }
-
-
     }
 }
