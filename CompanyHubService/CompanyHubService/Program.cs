@@ -12,12 +12,16 @@ using CompanyHubService.Seeders;
 using Confluent.Kafka;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.OpenApi.Models;
 
 
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+
+var configuration = builder.Configuration;
+builder.Services.AddSingleton<IConfiguration>(configuration);
 
 builder.Services.AddDbContext<CompanyHubDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -27,6 +31,7 @@ builder.Services.AddIdentity<User, IdentityRole>()
     .AddDefaultTokenProviders();
 
 builder.Services.AddControllers();
+builder.Services.AddControllers();
 builder.Services.AddAuthentication(options =>
 {
     // Make JWT the default
@@ -35,6 +40,8 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
+    options.RequireHttpsMetadata = false; // Allow HTTP if running locally
+    options.SaveToken = true;
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
@@ -47,6 +54,19 @@ builder.Services.AddAuthentication(options =>
             Encoding.UTF8.GetBytes("JWT_SECRET_PLACEHOLDER"))
     };
 });
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("Admin", policy =>
+        policy.RequireRole("Admin"));
+    options.AddPolicy("Root", policy =>
+        policy.RequireRole("Root"));
+    options.AddPolicy("VerifiedUser", policy =>
+        policy.RequireRole("VerifiedUser"));
+    options.AddPolicy("User", policy =>
+        policy.RequireRole("User"));
+});
+
 
 
 // Configure Identity options if needed (password settings, lockout, etc.)
@@ -80,7 +100,7 @@ builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<CompanyService>();
 builder.Services.AddScoped<RoleSeeder>();
-builder.Services.AddScoped<AdminService>(); 
+builder.Services.AddScoped<AdminService>();
 builder.Services.AddTransient<EmailService>();
 builder.Services.AddScoped<ProjectService>();
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
@@ -92,9 +112,42 @@ builder.Services.AddScoped<NotificationService>();
 
 
 
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "CompanyHub API", Version = "v1" });
+
+    // 🔹 Add JWT Authentication
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Enter '{your JWT token}' to authenticate."
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {} // No specific scopes required
+        }
+    });
+});
+
 
 builder.Services.AddCors(options =>
 {
@@ -129,9 +182,12 @@ app.UseRouting();
 
 app.UseCors("AllowAll");
 
+app.UseRouting();
+app.UseCors("AllowAll");
 app.UseAuthentication();
+app.UseAuthorization();
 
-app.UseAuthorization(); 
+app.UseAuthorization();
 
 
 

@@ -12,6 +12,8 @@ using Microsoft.EntityFrameworkCore;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using System.Threading.Tasks;
+using System.Security.Claims;
+using Newtonsoft.Json;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -46,21 +48,6 @@ public class AccountController : ControllerBase
             return BadRequest(ModelState);
         }
 
-        // ✅ Create an ActionContext properly
-        var actionContext = new ActionContext
-        {
-            HttpContext = _httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is null."),
-            RouteData = new RouteData(),
-            ActionDescriptor = new ActionDescriptor()
-        };
-
-        // ✅ Create a UrlHelper instance
-        var urlHelper = _urlHelperFactory.GetUrlHelper(actionContext);
-
-        // ✅ Ensure `httpContext` is not null before passing
-        var httpContext = _httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is null.");
-
-        // ✅ Pass `urlHelper` and `httpContext`
         var result = await _authService.RegisterUserAsync(model);
 
         if (result.Succeeded)
@@ -89,7 +76,7 @@ public class AccountController : ControllerBase
         }
 
 
-        var (result, token) = await _authService.LoginUserAsync(model.Email, model.Password); // var (result,token)
+        var (result, token) = await _authService.LoginUserAsync(model.Email, model.Password);
 
         if (!result.Succeeded)
         {
@@ -102,7 +89,8 @@ public class AccountController : ControllerBase
 
         var isAdmin = false;
         var userDTO = new UserDTO();
-        if ( user.Id != "9f4d21df-e8ab-473a-889d-d2eeaee28b32"){
+        if (user.Id != "9f4d21df-e8ab-473a-889d-d2eeaee28b32")
+        {
             var companies = await _dbContext.UserCompanies
             .Where(uc => uc.UserId == user.Id)
             .Include(uc => uc.Company)
@@ -137,7 +125,8 @@ public class AccountController : ControllerBase
             };
         }
 
-        else {
+        else
+        {
             isAdmin = true;
             userDTO = new UserDTO
             {
@@ -150,7 +139,7 @@ public class AccountController : ControllerBase
                 Projects = null
             };
         }
-        
+
 
         return Ok(new
         {
@@ -240,23 +229,28 @@ public class AccountController : ControllerBase
         return Ok(new { message = "Password reset successful!" });
     }
 
-    [HttpGet("ConfirmEmail")]
-    public async Task<IActionResult> ConfirmEmail(string userId, string token)
+    [HttpPost("ConfirmEmail")]
+    public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailRequest request)
     {
-        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(token))
+        if (string.IsNullOrEmpty(request.UserId) || string.IsNullOrEmpty(request.Token))
         {
             return BadRequest("Invalid email confirmation parameters.");
         }
 
-        var user = await _userManager.FindByIdAsync(userId);
+        var user = await _userManager.FindByIdAsync(request.UserId);
         if (user == null)
         {
             return NotFound("User not found.");
         }
 
-        var result = await _userManager.ConfirmEmailAsync(user, token);
+        var result = await _userManager.ConfirmEmailAsync(user, request.Token);
         if (result.Succeeded)
         {
+            if (await _userManager.IsInRoleAsync(user, "User"))
+            {
+                await _userManager.RemoveFromRoleAsync(user, "User");
+                await _userManager.AddToRoleAsync(user, "VerifiedUser");
+            }
             return Ok("Email confirmed successfully!");
         }
         else
@@ -265,6 +259,19 @@ public class AccountController : ControllerBase
         }
     }
 
+    [HttpGet("debug-claims")]
+    [Authorize] // Requires authentication
+    public IActionResult DebugClaims()
+    {
+        var identity = HttpContext.User.Identity as ClaimsIdentity;
+        var claims = identity.Claims.Select(c => new { c.Type, c.Value }).ToList();
+
+        // ✅ Log claims to the console (for debugging)
+        Console.WriteLine(JsonConvert.SerializeObject(claims, Formatting.Indented));
+
+        // ✅ Return claims as JSON in the response
+        return Ok(claims);
+    }
 
 
 }

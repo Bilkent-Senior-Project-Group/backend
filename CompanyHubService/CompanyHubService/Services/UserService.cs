@@ -55,7 +55,7 @@ namespace CompanyHubService.Services
 
         // For now just for test purpose, but later we might only give authorizations for certain type of users for this.
         // Not working now for some reason.
-        public async Task<bool> AddUserToCompany(string userId, Guid companyId, string roleId)
+        public async Task<bool> AddUserToCompany(string userId, Guid companyId)
         {
             // Check if the user and company exist
             var userExists = await _dbContext.Users.AnyAsync(u => u.Id == userId);
@@ -78,7 +78,6 @@ namespace CompanyHubService.Services
             {
                 UserId = userId,
                 CompanyId = companyId,
-                RoleId = roleId
             };
 
             _dbContext.UserCompanies.Add(userCompany);

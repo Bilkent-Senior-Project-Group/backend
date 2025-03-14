@@ -13,7 +13,7 @@ namespace CompanyHubService.Seeders
 
         public async Task InitializeRolesAsync()
         {
-            var roles = new[] { "Root", "Admin" };
+            var roles = new[] { "Root", "Admin", "User", "VerifiedUser" };
 
             foreach (var role in roles)
             {
