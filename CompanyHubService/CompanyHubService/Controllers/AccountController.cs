@@ -48,21 +48,6 @@ public class AccountController : ControllerBase
             return BadRequest(ModelState);
         }
 
-        // ✅ Create an ActionContext properly
-        var actionContext = new ActionContext
-        {
-            HttpContext = _httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is null."),
-            RouteData = new RouteData(),
-            ActionDescriptor = new ActionDescriptor()
-        };
-
-        // ✅ Create a UrlHelper instance
-        var urlHelper = _urlHelperFactory.GetUrlHelper(actionContext);
-
-        // ✅ Ensure `httpContext` is not null before passing
-        var httpContext = _httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is null.");
-
-        // ✅ Pass `urlHelper` and `httpContext`
         var result = await _authService.RegisterUserAsync(model);
 
         if (result.Succeeded)
@@ -91,7 +76,7 @@ public class AccountController : ControllerBase
         }
 
 
-        var (result, token) = await _authService.LoginUserAsync(model.Email, model.Password); // var (result,token)
+        var (result, token) = await _authService.LoginUserAsync(model.Email, model.Password);
 
         if (!result.Succeeded)
         {
@@ -244,21 +229,21 @@ public class AccountController : ControllerBase
         return Ok(new { message = "Password reset successful!" });
     }
 
-    [HttpGet("ConfirmEmail")]
-    public async Task<IActionResult> ConfirmEmail(string userId, string token)
+    [HttpPost("ConfirmEmail")]
+    public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailRequest request)
     {
-        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(token))
+        if (string.IsNullOrEmpty(request.UserId) || string.IsNullOrEmpty(request.Token))
         {
             return BadRequest("Invalid email confirmation parameters.");
         }
 
-        var user = await _userManager.FindByIdAsync(userId);
+        var user = await _userManager.FindByIdAsync(request.UserId);
         if (user == null)
         {
             return NotFound("User not found.");
         }
 
-        var result = await _userManager.ConfirmEmailAsync(user, token);
+        var result = await _userManager.ConfirmEmailAsync(user, request.Token);
         if (result.Succeeded)
         {
             if (await _userManager.IsInRoleAsync(user, "User"))
