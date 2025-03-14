@@ -32,6 +32,5 @@ namespace CompanyHubService.DTOs
         //[JsonPropertyName("project_url")]  // Explicitly map JSON field
         public string ProjectUrl { get; set; }
 
-        public CompanyDTO Company { get; set; }
     }
 }

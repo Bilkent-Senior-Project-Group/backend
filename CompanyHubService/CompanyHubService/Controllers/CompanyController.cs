@@ -248,5 +248,28 @@ namespace CompanyHubService.Controllers
             return Ok(searchResult);
         }
 
+        [HttpGet("GetFeaturedCompanies")]
+        public async Task<IActionResult> GetFeaturedCompanies()
+        {
+            var companies = await dbContext.Companies
+                .Where(c => c.Verified)
+                .OrderByDescending(c => c.FoundedYear) // we can change it to rating??
+                .Take(10)
+                .Select(c => new CompanyProfileDTO
+                {
+                    CompanyId = c.CompanyId,
+                    Name = c.CompanyName,
+                    Description = c.Description,
+                    Location = c.Location,
+                    CompanySize = c.CompanySize,
+                    Specialties = c.Specialties
+                })
+                .ToListAsync();
+
+            return Ok(companies);
+        }
+
+
+
     }
 }
