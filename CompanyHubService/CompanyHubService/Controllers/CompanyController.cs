@@ -95,11 +95,12 @@ namespace CompanyHubService.Controllers
             return Ok(new { Message = "Company successfully created." });
         }
 
-        [HttpGet("GetCompany/{companyId}")]
-        public async Task<IActionResult> GetCompany(Guid companyId) // Maybe add [FromBody] later. Instead of getting it from an url
+        [HttpGet("GetCompany/{companyName}")]
+        public async Task<IActionResult> GetCompany(string companyName) // Maybe add [FromBody] later. Instead of getting it from an url
         {
+
             var company = await dbContext.Companies
-                .Where(c => c.CompanyId == companyId)
+                .Where(c => c.CompanyName.Replace(" ", "") == companyName)
                 .Include(c => c.Projects) // ✅ Include projects under the company
                 .FirstOrDefaultAsync();
 
