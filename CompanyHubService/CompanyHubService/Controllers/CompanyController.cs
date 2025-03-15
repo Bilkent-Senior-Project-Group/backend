@@ -92,7 +92,23 @@ namespace CompanyHubService.Controllers
                 return BadRequest(new { Message = "Failed to create company." });
             }
 
-            return Ok(new { Message = "Company successfully created." });
+            // Retrieve the newly created company's details
+            var company = await dbContext.Companies
+                .Where(c => c.CompanyName == request.CompanyName)
+                .FirstOrDefaultAsync();
+
+            if (company == null)
+            {
+                return BadRequest(new { Message = "Company created but failed to retrieve details." });
+            }
+
+            var companyDTO = new
+            {
+                companyId = company.CompanyId,
+                name = company.CompanyName
+            };
+
+            return Ok(new { Message = "Company successfully created.", Data = companyDTO });
         }
 
         [HttpGet("GetCompany/{companyName}")]
