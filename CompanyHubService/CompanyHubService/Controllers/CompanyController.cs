@@ -105,7 +105,7 @@ namespace CompanyHubService.Controllers
             var companyDTO = new
             {
                 companyId = company.CompanyId,
-                name = company.CompanyName
+                companyName = company.CompanyName
             };
 
             return Ok(new { Message = "Company successfully created.", Data = companyDTO });
