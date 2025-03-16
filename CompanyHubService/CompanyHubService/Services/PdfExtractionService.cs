@@ -20,7 +20,7 @@ namespace CompanyHubService.Services
         private readonly IConfiguration _configuration;
         
         // Hardcoded OpenAI API key
-        private const string OpenAIApiKey = "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";
+        private const string OpenAIApiKey = "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";
         
         public PdfExtractionService(IConfiguration configuration)
         {
