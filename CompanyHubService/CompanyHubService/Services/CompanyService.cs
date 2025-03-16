@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Net.Http;
 using Newtonsoft.Json;
 using System.Text;
+using Newtonsoft.Json.Linq;
 
 namespace CompanyHubService.Services
 {
@@ -382,34 +383,27 @@ namespace CompanyHubService.Services
                 return false;
             }
         }
-
-        public async Task<object> FreeTextSearchAsync(string searchQuery)
+        public async Task<string> FreeTextSearchAsync(string searchQuery)
         {
-            // Define FastAPI URL
-            string fastApiUrl = "http://127.0.0.1:8000/search";  // Adjust if needed
+            string fastApiUrl = "http://127.0.0.1:8000/search";
 
-            // Prepare request body
             var payload = new { query = searchQuery };
             var jsonPayload = JsonConvert.SerializeObject(payload);
             var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
 
             try
             {
-                // Send POST request to FastAPI
                 var client = _httpClientFactory.CreateClient();
                 HttpResponseMessage response = await client.PostAsync(fastApiUrl, content);
-
-                // Ensure success response
                 response.EnsureSuccessStatusCode();
 
-                // Parse response
-                string jsonResponse = await response.Content.ReadAsStringAsync();
-                return JsonConvert.DeserializeObject<object>(jsonResponse);
+                // Simply return the raw JSON string without any deserialization
+                return await response.Content.ReadAsStringAsync();
             }
             catch (Exception ex)
             {
-                // Handle errors
-                return new { error = "Failed to connect to FastAPI", details = ex.Message };
+                // Return a formatted error JSON
+                return JsonConvert.SerializeObject(new { error = "Failed to connect to FastAPI", details = ex.Message });
             }
         }
     }

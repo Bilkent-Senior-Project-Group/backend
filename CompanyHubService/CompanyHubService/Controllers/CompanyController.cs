@@ -277,17 +277,18 @@ namespace CompanyHubService.Controllers
         }
 
         [HttpPost("FreeTextSearch")]
-        public async Task<IActionResult> FreeTextSearch(string textQuery)
+        public async Task<IActionResult> FreeTextSearch([FromBody] string textQuery)
         {
             if (string.IsNullOrEmpty(textQuery))
             {
                 return BadRequest(new { Message = "Empty search" });
             }
 
-            var searchResult = await companyService.FreeTextSearchAsync(textQuery);
+            // Get the raw JSON string from the service
+            string rawJsonResult = await companyService.FreeTextSearchAsync(textQuery);
 
-            return Ok(searchResult);
+            // Return it as ContentResult with proper content type
+            return Content(rawJsonResult, "application/json");
         }
-
     }
 }
