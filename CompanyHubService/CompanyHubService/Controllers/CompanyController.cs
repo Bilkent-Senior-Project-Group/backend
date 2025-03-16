@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using iText.Layout.Element;
 namespace CompanyHubService.Controllers
-{   
+{
 
     [Route("api/[controller]")]
     [ApiController]
@@ -61,7 +61,8 @@ namespace CompanyHubService.Controllers
 
         // This is the one where the root user creates/adds a company by himself/herself
         [HttpPost("CreateCompany")]
-        [Authorize]
+        // Both the root user and the verifiedUser, maybe admin too can create a company (Admin can create a company on behalf of a user)
+        [Authorize(Roles = "Root, VerifiedUser, Admin")]
         public async Task<IActionResult> CreateCompany([FromBody] CreateCompanyRequestDTO request)
         {
             if (!ModelState.IsValid)
@@ -78,32 +79,44 @@ namespace CompanyHubService.Controllers
 
             var user = await userManager.FindByIdAsync(userId);
 
-            if (!user.EmailConfirmed) // ✅ Check if email is confirmed
+            if (!user.EmailConfirmed) // This might be unnecessary as the user is already verified
             {
                 return BadRequest(new { Message = "Your email must be confirmed before creating a company." });
-                // send mail here
+                // send mail here (we can send the mail here or in the FRONTEND)
             }
 
-            // Define the role as CompanyAdmin for the creator
-            var roleId = "e9fe2584-94a2-4c37-90d8-437041c07ab8"; //ADMIN (we might )
-                                                                // 
-
-
-            var result = await companyService.CreateCompanyAsync(request, userId, roleId);
+            var result = await companyService.CreateCompanyAsync(request, userId);
 
             if (!result)
             {
                 return BadRequest(new { Message = "Failed to create company." });
             }
 
-            return Ok(new { Message = "Company successfully created." });
+            // Retrieve the newly created company's details
+            var company = await dbContext.Companies
+                .Where(c => c.CompanyName == request.CompanyName)
+                .FirstOrDefaultAsync();
+
+            if (company == null)
+            {
+                return BadRequest(new { Message = "Company created but failed to retrieve details." });
+            }
+
+            var companyDTO = new
+            {
+                companyId = company.CompanyId,
+                companyName = company.CompanyName
+            };
+
+            return Ok(new { Message = "Company successfully created.", Data = companyDTO });
         }
 
-        [HttpGet("GetCompany/{companyId}")]
-        public async Task<IActionResult> GetCompany(Guid companyId)
+        [HttpGet("GetCompany/{companyName}")]
+        public async Task<IActionResult> GetCompany(string companyName) // Maybe add [FromBody] later. Instead of getting it from an url
         {
+
             var company = await dbContext.Companies
-                .Where(c => c.CompanyId == companyId)
+                .Where(c => c.CompanyName.Replace(" ", "") == companyName)
                 .Include(c => c.Projects) // ✅ Include projects under the company
                 .FirstOrDefaultAsync();
 
@@ -157,9 +170,8 @@ namespace CompanyHubService.Controllers
             return Ok(companyDTO);
         }
 
-
         [HttpPost("ModifyCompanyProfile")]
-        //[Authorize]
+        [Authorize(Roles = "Root, Admin")] // Maybe VerifiedUser can modify their company profile too. Admin might be able to modify any company profile
         public async Task<IActionResult> ModifyCompanyProfile(CompanyProfileDTO companyProfileDTO)
         {
             if (!ModelState.IsValid)
@@ -180,9 +192,24 @@ namespace CompanyHubService.Controllers
         }
 
         [HttpGet("GetUsersOfCompany/{companyId}")]
-        [Authorize] // Optional: Ensure only authorized users can access this
-        public async Task<IActionResult> GetUsersOfCompany(Guid companyId)
+        [Authorize(Roles = "Admin, Root, VerifiedUser")] // VerifiedUser and Root should be in the company to see the users
+        public async Task<IActionResult> GetUsersOfCompany([FromBody] Guid companyId)
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { Message = "User ID not found in token." });
+            }
+
+            var userCompany = await dbContext.UserCompanies
+                .Where(uc => uc.UserId == userId && uc.CompanyId == companyId)
+                .FirstOrDefaultAsync();
+
+            if (userCompany == null && !User.IsInRole("Admin"))
+            {
+                return Unauthorized(new { Message = "You are not authorized to view the users of this company." });
+            }
+
             var users = await companyService.GetUsersOfCompanyAsync(companyId);
 
             if (users == null || !users.Any())
@@ -194,9 +221,26 @@ namespace CompanyHubService.Controllers
         }
 
         [HttpGet("GetCompaniesOfUser/{userId}")]
-        [Authorize] // Optional: Ensure only authorized users can access this
-        public async Task<IActionResult> GetCompaniesOfUser(string userId)
+        [Authorize] // Only the user can see their companies (maybe Admin can see all companies) Maybe it can be changed later???
+        public async Task<IActionResult> GetCompaniesOfUser([FromBody] string userId)
         {
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return BadRequest(new { Message = "User ID is required." });
+            }
+
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return Unauthorized(new { Message = "User ID not found in token." });
+            }
+
+            if (currentUserId != userId && !User.IsInRole("Admin"))
+            {
+                return Unauthorized(new { Message = "You are not authorized to view the companies of this user." });
+            }
+
             var companies = await companyService.GetCompaniesOfUserAsync(userId);
 
             if (companies == null || !companies.Any())
@@ -207,75 +251,40 @@ namespace CompanyHubService.Controllers
             return Ok(companies);
         }
 
-        //This is the one where company is added from a given json file with one company
-        [HttpPost("AddCompany")]
-        public async Task<IActionResult> AddCompany([FromBody] CompanyProfileDTO companyDto)
+        [HttpPost("FreeTextSearch")] // Maybe this can be a GET request. Any user can search for companies
+        [AllowAnonymous]
+        public async Task<IActionResult> FreeTextSearch(string textQuery)
         {
-            if (!ModelState.IsValid)
+            if (string.IsNullOrEmpty(textQuery))
             {
-                return BadRequest(new { Message = "Invalid input parameters." });
+                return BadRequest(new { Message = "Empty search" });
             }
 
-            var result = await companyService.AddCompanyAsync(companyDto);
+            var searchResult = await companyService.FreeTextSearchAsync(textQuery);
 
-            if (!result)
-            {
-                return BadRequest(new { Message = "Failed to add company." });
-            }
-
-            return Ok(new { Message = "Company successfully added." });
+            return Ok(searchResult);
         }
 
-        //This is the one where company is added from a given json file with muitple companies
-        [HttpPost("BulkAddCompanies")]
-        public async Task<IActionResult> BulkAddCompanies([FromBody] Dictionary<string, CompanyProfileDTO> jsonCompanies)
+        [HttpGet("GetFeaturedCompanies")]
+        public async Task<IActionResult> GetFeaturedCompanies()
         {
-            if (jsonCompanies == null || jsonCompanies.Count == 0)
-            {
-                return BadRequest(new { message = "No companies found in the request." });
-            }
-
-            // Convert dictionary to a list of CompanyProfileDTO
-            var bulkCompanies = new BulkCompanyInsertDTO
-            {
-                Companies = jsonCompanies.Select(entry =>
+            var companies = await dbContext.Companies
+                .Where(c => c.Verified)
+                .OrderByDescending(c => c.FoundedYear) // we can change it to rating??
+                .Take(10)
+                .Select(c => new CompanyProfileDTO
                 {
-                    var companyDto = entry.Value;
-                    companyDto.Website = entry.Key;  // The JSON key is the website
-                    return companyDto;
-                }).ToList()
-            };
+                    CompanyId = c.CompanyId,
+                    Name = c.CompanyName,
+                    Description = c.Description,
+                    Location = c.Location,
+                    CompanySize = c.CompanySize,
+                    Specialties = c.Specialties
+                })
+                .ToListAsync();
 
-            var result = await companyService.BulkAddCompaniesAsync(bulkCompanies);
-
-            if (result)
-                return Ok(new { message = "All companies added successfully." });
-
-            return BadRequest(new { message = "Failed to add companies." });
+            return Ok(companies);
         }
-
-        [HttpPost("ApproveCompany/{companyId}")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> ApproveCompany(Guid companyId)
-        {
-            var company = await dbContext.Companies.FindAsync(companyId);
-
-            if (company == null)
-            {
-                return NotFound(new { Message = "Company not found." });
-            }
-
-            if (company.Verified)
-            {
-                return BadRequest(new { Message = "Company is already approved." });
-            }
-
-            company.Verified = true;
-            await dbContext.SaveChangesAsync();
-
-            return Ok(new { Message = $"Company '{company.CompanyName}' has been approved." });
-        }
-
         [HttpPost("FreeTextSearch")]
         public async Task<IActionResult> FreeTextSearch([FromBody] string textQuery)
         {
@@ -286,6 +295,7 @@ namespace CompanyHubService.Controllers
 
             // Get the raw JSON string from the service
             string rawJsonResult = await companyService.FreeTextSearchAsync(textQuery);
+
 
             // Return it as ContentResult with proper content type
             return Content(rawJsonResult, "application/json");

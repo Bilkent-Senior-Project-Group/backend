@@ -65,9 +65,11 @@ namespace CompanyHubService.Controllers
 
 
         [HttpPost("AddUserToCompany")]
-        public async Task<IActionResult> AddUserToCompany(string userId, string companyId, string roleId)
+        [Authorize(Roles = "Admin, Root")] // Maybe an invitation system can be added later. (InviteCompany table can be created)
+        // The root user should select its company from a dropdown list of its companies. 
+        public async Task<IActionResult> AddUserToCompany(string userId, string companyId) // Again DTO can be used.
         {
-            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(companyId) || string.IsNullOrEmpty(roleId))
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(companyId))
             {
                 return BadRequest(new { Message = "Invalid input parameters." });
             }
@@ -78,7 +80,7 @@ namespace CompanyHubService.Controllers
                 return BadRequest(new { Message = "Invalid Company ID." });
             }
 
-            var result = await userService.AddUserToCompany(userId, companyGuid, roleId);
+            var result = await userService.AddUserToCompany(userId, companyGuid);
 
             if (result)
             {
@@ -96,6 +98,7 @@ namespace CompanyHubService.Controllers
         }
 
         [HttpGet("GetNotifications")]
+        [Authorize]
         public async Task<IActionResult> GetNotifications()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -103,22 +106,5 @@ namespace CompanyHubService.Controllers
 
             return Ok(notifications);
         }
-
-        [HttpPost("ApproveUser/{userId}")]
-        [Authorize(Roles = "Admin")] // Only admins can approve users
-        public async Task<IActionResult> ApproveUser(string userId)
-        {
-            var user = await userManager.FindByIdAsync(userId);
-            if (user == null)
-            {
-                return NotFound(new { Message = "User not found." });
-            }
-
-            user.EmailConfirmed = true;
-            await userManager.UpdateAsync(user);
-
-            return Ok(new { Message = "User email confirmed successfully." });
-        }
-
     }
 }

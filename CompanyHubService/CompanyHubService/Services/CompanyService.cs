@@ -1,4 +1,4 @@
-using CompanyHubService.Data;
+﻿using CompanyHubService.Data;
 using CompanyHubService.DTOs;
 using CompanyHubService.Models;
 using Microsoft.EntityFrameworkCore;
@@ -28,7 +28,7 @@ namespace CompanyHubService.Services
         }
 
         //used when a new user creates a company.
-        public async Task<bool> CreateCompanyAsync(CreateCompanyRequestDTO request, string userId, string roleId)
+        public async Task<bool> CreateCompanyAsync(CreateCompanyRequestDTO request, string userId)
         {
 
             var company = new Company
@@ -56,7 +56,6 @@ namespace CompanyHubService.Services
             {
                 UserId = userId,
                 CompanyId = company.CompanyId,
-                RoleId = roleId
             };
 
             _dbContext.UserCompanies.Add(userCompany);
@@ -97,94 +96,6 @@ namespace CompanyHubService.Services
             }
 
             return true;
-        }
-
-
-        // Used when importing company data from external source
-        public async Task<bool> AddCompanyAsync(CompanyProfileDTO companyDto)
-        {
-            using var transaction = await _dbContext.Database.BeginTransactionAsync();
-            try
-            {
-
-                Console.WriteLine("Starting AddCompanyAsync...");
-
-                if (companyDto == null)
-                {
-                    Console.WriteLine("companyDto is NULL!");
-                    return false;
-                }
-
-                Console.WriteLine($"Processing Company: {companyDto.Name}");
-
-                // Create new company entity
-                var company = new Company
-                {
-                    CompanyId = Guid.NewGuid(),
-                    CompanyName = companyDto.Name,
-                    Specialties = companyDto.Specialties,
-                    Industries = string.Join(", ", companyDto.Industries ?? new List<string>()), // Convert list to string
-                    CoreExpertise = string.Join(", ", companyDto.CoreExpertise ?? new List<string>()),
-                    Location = companyDto.Location,
-                    Website = companyDto.Website,
-                    CompanySize = companyDto.CompanySize,
-                    FoundedYear = companyDto.FoundedYear,
-                    ContactInfo = companyDto.ContactInfo,
-                    Verified = companyDto.Verified == 1, // Convert int to bool
-                    Address = string.IsNullOrEmpty(companyDto.Address) ? "Unknown" : companyDto.Address, // ✅ Default value
-                };
-
-                _dbContext.Companies.Add(company);
-                await _dbContext.SaveChangesAsync();
-
-                Console.WriteLine($"Successfully added company: {company.CompanyName}");
-
-                // Add projects (portfolio) to Projects table
-
-
-                if (companyDto.Projects != null && companyDto.Projects.Any())
-                {
-                    Console.WriteLine("📌 Adding Projects...");
-                    foreach (var projectDto in companyDto.Projects)
-                    {
-                        var project = new Project
-                        {
-                            ProjectId = Guid.NewGuid(),
-                            ProjectName = projectDto.ProjectName,
-                            Description = projectDto.Description,
-                            TechnologiesUsed = string.Join(", ", projectDto.TechnologiesUsed),
-                            Industry = projectDto.Industry,
-                            ClientType = projectDto.ClientType,
-                            Impact = projectDto.Impact,
-                            StartDate = projectDto.StartDate,
-                            CompletionDate = projectDto.CompletionDate,
-                            IsOnCompedia = false,
-                            IsCompleted = projectDto.IsCompleted,
-                            ProjectUrl = projectDto.ProjectUrl
-                        };
-
-                        _dbContext.Projects.Add(project);
-                        Console.WriteLine($"Added project: {project.ProjectName}");
-                    }
-                }
-
-                else
-                {
-                    Console.WriteLine("No projects found in portfolio.");
-                }
-
-                await _dbContext.SaveChangesAsync();
-                await transaction.CommitAsync();
-
-                Console.WriteLine("Transaction committed. Company added successfully.");
-                return true;
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                Console.WriteLine($"Error: {ex.Message}");
-                return false;
-            }
         }
 
         public async Task<bool> ModifyCompanyProfileAsync(CompanyProfileDTO companyProfileDTO)
