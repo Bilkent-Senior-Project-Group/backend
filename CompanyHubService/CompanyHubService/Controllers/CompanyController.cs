@@ -251,20 +251,6 @@ namespace CompanyHubService.Controllers
             return Ok(companies);
         }
 
-        [HttpPost("FreeTextSearch")] // Maybe this can be a GET request. Any user can search for companies
-        [AllowAnonymous]
-        public async Task<IActionResult> FreeTextSearch(string textQuery)
-        {
-            if (string.IsNullOrEmpty(textQuery))
-            {
-                return BadRequest(new { Message = "Empty search" });
-            }
-
-            var searchResult = await companyService.FreeTextSearchAsync(textQuery);
-
-            return Ok(searchResult);
-        }
-
         [HttpGet("GetFeaturedCompanies")]
         public async Task<IActionResult> GetFeaturedCompanies()
         {
@@ -285,6 +271,7 @@ namespace CompanyHubService.Controllers
 
             return Ok(companies);
         }
+
         [HttpPost("FreeTextSearch")]
         public async Task<IActionResult> FreeTextSearch([FromBody] string textQuery)
         {
