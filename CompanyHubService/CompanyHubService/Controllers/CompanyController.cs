@@ -195,7 +195,7 @@ namespace CompanyHubService.Controllers
 
         [HttpGet("GetUsersOfCompany/{companyId}")]
         [Authorize(Roles = "Admin, Root, VerifiedUser")] // VerifiedUser and Root should be in the company to see the users
-        public async Task<IActionResult> GetUsersOfCompany([FromBody] Guid companyId)
+        public async Task<IActionResult> GetUsersOfCompany(Guid companyId)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
