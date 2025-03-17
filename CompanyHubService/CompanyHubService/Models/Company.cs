@@ -25,7 +25,10 @@ namespace CompanyHubService.Models
         public string Location { get; set; }
         public string Website { get; set; }
         public bool Verified { get; set; }
-        public string ContactInfo { get; set; }
+
+        public string Phone { get; set; }
+
+        public string Email { get; set; }
         public List<Project> Projects { get; set; } = new List<Project>();
         // Navigation property for Products
         public ICollection<Product> Products { get; set; } // One-to-Many relationship

@@ -26,8 +26,8 @@ namespace CompanyHubService.DTOs
 
         public bool IsCompleted { get; set; }
 
-        public CompanyDTO ClientCompany { get; set; }
-        public CompanyDTO ProviderCompany { get; set; }
+        public string ClientCompanyName { get; set; }
+        public string ProviderCompanyName { get; set; }
 
         //[JsonPropertyName("project_url")]  // Explicitly map JSON field
         public string ProjectUrl { get; set; }

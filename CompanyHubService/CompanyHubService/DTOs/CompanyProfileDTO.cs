@@ -51,7 +51,9 @@ namespace CompanyHubService.DTOs
 
         // [Required]
         // [JsonPropertyName("contact_info")]  // Ensure correct mapping
-        public string ContactInfo { get; set; }
+        public string Phone { get; set; } = "Unknown"; // Default to "Unknown"
+
+        public string Email { get; set; } = "Unknown"; // Default to "Unknown"
 
         // [Required]
         public string Address { get; set; } = "Unknown"; // Default to "Unknown"

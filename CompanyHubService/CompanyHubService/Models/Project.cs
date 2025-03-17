@@ -4,7 +4,7 @@ namespace CompanyHubService.Models
 {
     public class Project
     {
-        public Guid ProjectId { get; set; }
+        public Guid ProjectId { get; set; } = Guid.NewGuid();
         public string ProjectName { get; set; }
         public string Description { get; set; }
         public string TechnologiesUsed { get; set; }
