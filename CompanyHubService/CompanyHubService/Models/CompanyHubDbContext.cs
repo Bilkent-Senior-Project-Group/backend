@@ -33,6 +33,8 @@ namespace CompanyHubService.Data
         public DbSet<ProjectRequest> ProjectRequests { get; set; }
         public DbSet<ProjectCompany> ProjectCompanies { get; set; }
 
+        public DbSet<Review> Reviews { get; set; }
+
 
 
 
@@ -123,6 +125,17 @@ namespace CompanyHubService.Data
             .WithMany()
             .HasForeignKey(pr => pr.ProviderCompanyId)
             .OnDelete(DeleteBehavior.SetNull);
+
+            // Configure relationships if needed
+            modelBuilder.Entity<Review>()
+                .HasOne(r => r.Company)
+                .WithMany(c => c.Reviews)
+                .HasForeignKey(r => r.CompanyId);
+
+            modelBuilder.Entity<Review>()
+                .HasOne(r => r.User)
+                .WithMany(u => u.Reviews)
+                .HasForeignKey(r => r.UserId);
         }
     }
 }
