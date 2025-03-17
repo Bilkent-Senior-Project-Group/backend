@@ -23,7 +23,10 @@ namespace CompanyHubService.DTOs
         public string Location { get; set; }
         public string Website { get; set; }
         public int CompanySize { get; set; }
-        public string ContactInfo { get; set; }
+
+        public string Phone { get; set; }
+
+        public string Email { get; set; }
         public string CoreExpertise { get; set; }
 
         [Required]

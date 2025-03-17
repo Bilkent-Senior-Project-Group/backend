@@ -21,7 +21,6 @@ namespace CompanyHubService.Controllers
         private readonly IPdfExtractionService pdfExtractionService;
         private readonly CompanyService companyService;
         private readonly UserService userService;
-
         private readonly UserManager<User> userManager;
 
         private readonly CompanyHubDbContext dbContext;
@@ -112,18 +111,43 @@ namespace CompanyHubService.Controllers
         }
 
         [HttpGet("GetCompany/{companyName}")]
-        public async Task<IActionResult> GetCompany(string companyName) // Maybe add [FromBody] later. Instead of getting it from an url
+        public async Task<IActionResult> GetCompany(string companyName)
         {
-
             var company = await dbContext.Companies
                 .Where(c => c.CompanyName.Replace(" ", "") == companyName)
-                .Include(c => c.Projects) // ✅ Include projects under the company
+                .Include(c => c.Projects)
+                    .ThenInclude(p => p.ProjectCompany) // Include ProjectCompany
+                    .ThenInclude(pc => pc.ClientCompany) // Ensure ClientCompany is included
+                .Include(c => c.Projects)
+                    .ThenInclude(p => p.ProjectCompany)
+                    .ThenInclude(pc => pc.ProviderCompany) // Ensure ProviderCompany is included
                 .FirstOrDefaultAsync();
 
             if (company == null)
             {
                 return NotFound(new { Message = "Company not found." });
             }
+
+            var projects = await dbContext.ProjectCompanies
+                .Where(pc => pc.ClientCompanyId == company.CompanyId || pc.ProviderCompanyId == company.CompanyId)
+                .Select(pc => new ProjectDTO
+                {
+                    ProjectId = pc.Project.ProjectId,
+                    ProjectName = pc.Project.ProjectName,
+                    Description = pc.Project.Description,
+                    TechnologiesUsed = pc.Project.TechnologiesUsed.Split(new[] { ", " }, StringSplitOptions.None).ToList(),
+                    Industry = pc.Project.Industry,
+                    ClientType = pc.Project.ClientType,
+                    Impact = pc.Project.Impact,
+                    StartDate = pc.Project.StartDate,
+                    CompletionDate = pc.Project.CompletionDate,
+                    IsOnCompedia = pc.Project.IsOnCompedia,
+                    IsCompleted = pc.Project.IsCompleted,
+                    ProjectUrl = pc.Project.ProjectUrl,
+                    ClientCompanyName = pc.ClientCompany.CompanyName,
+                    ProviderCompanyName = pc.ProviderCompany.CompanyName
+                })
+                .ToListAsync();
 
             var companyDTO = new CompanyProfileDTO
             {
@@ -138,33 +162,10 @@ namespace CompanyHubService.Controllers
                 Website = company.Website,
                 Verified = company.Verified ? 1 : 0,
                 CompanySize = company.CompanySize,
-                ContactInfo = company.ContactInfo,
+                Phone = company.Phone,
+                Email = company.Email,
                 CoreExpertise = company.CoreExpertise?.Split(", ").ToList() ?? new List<string>(),
-                Projects = company.Projects.Select(p => new ProjectDTO
-                {
-                    ProjectId = p.ProjectId,
-                    ProjectName = p.ProjectName,
-                    Description = p.Description,
-                    TechnologiesUsed = p.TechnologiesUsed.Split(", ").ToList(),
-                    Industry = p.Industry,
-                    ClientType = p.ClientType,
-                    Impact = p.Impact,
-                    StartDate = p.StartDate,
-                    CompletionDate = p.CompletionDate,
-                    IsOnCompedia = p.IsOnCompedia,
-                    IsCompleted = p.IsCompleted,
-                    ProjectUrl = p.ProjectUrl,
-                    ClientCompany = new CompanyDTO
-                    {
-                        CompanyId = p.ProjectCompany.ClientCompany.CompanyId,
-                        CompanyName = p.ProjectCompany.ClientCompany.CompanyName
-                    },
-                    ProviderCompany = p.ProjectCompany.ProviderCompany != null ? new CompanyDTO
-                    {
-                        CompanyId = p.ProjectCompany.ProviderCompany.CompanyId,
-                        CompanyName = p.ProjectCompany.ProviderCompany.CompanyName
-                    } : null
-                }).ToList()
+                Projects = projects
             };
 
             return Ok(companyDTO);

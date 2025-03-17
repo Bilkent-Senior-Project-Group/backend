@@ -89,7 +89,8 @@ namespace CompanyHubService.Services
                     Website = companyDto.Website,
                     CompanySize = companyDto.CompanySize,
                     FoundedYear = companyDto.FoundedYear,
-                    ContactInfo = companyDto.ContactInfo,
+                    Phone = string.IsNullOrEmpty(companyDto.Phone) ? "Unknown" : companyDto.Phone, // ✅ Default value
+                    Email = string.IsNullOrEmpty(companyDto.Email) ? "Unknown" : companyDto.Email, // ✅ Default value
                     Verified = companyDto.Verified == 1, // Convert int to bool
                     Address = string.IsNullOrEmpty(companyDto.Address) ? "Unknown" : companyDto.Address, // ✅ Default value
                 };
@@ -179,7 +180,8 @@ namespace CompanyHubService.Services
                         Website = companyDto.Website,
                         CompanySize = companyDto.CompanySize,
                         FoundedYear = companyDto.FoundedYear,
-                        ContactInfo = companyDto.ContactInfo,
+                        Phone = companyDto.Phone,
+                        Email = companyDto.Email,
                         Address = companyDto.Address,
                         Verified = companyDto.Verified == 0
                     };
