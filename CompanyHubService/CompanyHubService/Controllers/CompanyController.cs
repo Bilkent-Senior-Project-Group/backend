@@ -164,6 +164,7 @@ namespace CompanyHubService.Controllers
                 CompanySize = company.CompanySize,
                 Phone = company.Phone,
                 Email = company.Email,
+                OverallRating = company.OverallRating,
                 CoreExpertise = company.CoreExpertise?.Split(", ").ToList() ?? new List<string>(),
                 Projects = projects
             };
