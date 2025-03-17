@@ -322,14 +322,85 @@ namespace CompanyHubService.Services
                 HttpResponseMessage response = await client.PostAsync(fastApiUrl, content);
                 response.EnsureSuccessStatusCode();
 
-                // Simply return the raw JSON string without any deserialization
-                return await response.Content.ReadAsStringAsync();
+                // Deserialize the FastAPI response
+                var responseBody = await response.Content.ReadAsStringAsync();
+
+                // **DEBUG LOG: Print raw API response**
+                Console.WriteLine("DEBUG: Received Search Results -> " + responseBody);
+
+                var searchResults = JsonConvert.DeserializeObject<SearchResponseDTO>(responseBody);
+
+                // Extract company IDs
+                var companyIds = searchResults.Results
+                    .Select(r => Guid.TryParse(r.CompanyId, out var guid) ? guid : Guid.Empty)
+                    .Where(guid => guid != Guid.Empty)  // Remove failed conversions
+                    .ToList();
+
+                // Fetch company details from the SQL database
+                var companies = await _dbContext.Companies
+                    .Where(c => companyIds.Contains(c.CompanyId))
+                    .Select(c => new
+                    {
+                        CompanyId = c.CompanyId,
+                        Name = c.CompanyName,
+                        Size = c.CompanySize,
+                        Location = c.Location,
+                        Specialties = c.Specialties,
+                        Description = c.Description
+                    })
+                    .ToListAsync();
+
+                // Merge SQL data with distances from FastAPI
+                var enrichedResults = searchResults.Results
+                    .Join(companies,
+                          r => Guid.TryParse(r.CompanyId, out var guid) ? guid : Guid.Empty,  // Convert string ID to GUID
+                          c => c.CompanyId,  // This is already GUID
+                          (r, c) => new
+                          {
+                              c.CompanyId,
+                              c.Name,
+                              c.Size,
+                              c.Location,
+                              c.Specialties,
+                              c.Description,
+                              r.Distance
+                          })
+                    .OrderBy(r => r.Distance)
+                    .ToList();
+
+                return JsonConvert.SerializeObject(new
+                {
+                    query = searchResults.Query,
+                    extracted = searchResults.Extracted,
+                    results = enrichedResults
+                });
             }
             catch (Exception ex)
             {
-                // Return a formatted error JSON
-                return JsonConvert.SerializeObject(new { error = "Failed to connect to FastAPI", details = ex.Message });
+                return JsonConvert.SerializeObject(new { error = "Failed to process search", details = ex.Message });
             }
         }
+
+        // DTO for parsing FastAPI response
+        public class SearchResponseDTO
+        {
+            public string Query { get; set; }
+            public ExtractedFieldsDTO Extracted { get; set; }
+            public List<SearchResultDTO> Results { get; set; }
+        }
+
+        public class ExtractedFieldsDTO
+        {
+            public List<string> Specialties { get; set; }
+            public List<string> Industries { get; set; }
+            public List<string> TechnologiesUsed { get; set; }
+        }
+
+        public class SearchResultDTO
+        {
+            public string CompanyId { get; set; }
+            public double Distance { get; set; }
+        }
+
     }
 }
