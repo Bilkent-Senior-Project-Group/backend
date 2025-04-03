@@ -18,5 +18,7 @@ namespace CompanyHubService.Models
 
         public bool IsAdmin { get; set; }
 
+        public ICollection<Review> Reviews { get; set; } = new List<Review>();
+
     }
 }

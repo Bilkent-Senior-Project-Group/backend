@@ -9,7 +9,7 @@ namespace CompanyHubService.Models
         public Guid ProjectId { get; set; }
 
         [Required]
-        public Guid ClientCompanyId { get; set; }
+        public Guid? ClientCompanyId { get; set; }
 
 
         public Guid? ProviderCompanyId { get; set; }

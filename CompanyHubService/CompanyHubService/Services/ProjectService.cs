@@ -49,16 +49,8 @@ namespace CompanyHubService.Services
                 IsOnCompedia = project.IsOnCompedia,
                 IsCompleted = project.IsCompleted,
                 ProjectUrl = project.ProjectUrl,
-                ClientCompany = new CompanyDTO
-                {
-                    CompanyId = project.ProjectCompany.ClientCompany.CompanyId,
-                    CompanyName = project.ProjectCompany.ClientCompany.CompanyName
-                },
-                ProviderCompany = project.ProjectCompany.ProviderCompany != null ? new CompanyDTO
-                {
-                    CompanyId = project.ProjectCompany.ProviderCompany.CompanyId,
-                    CompanyName = project.ProjectCompany.ProviderCompany.CompanyName
-                } : null
+                ClientCompanyName = project.ProjectCompany.ClientCompany.CompanyName,
+                ProviderCompanyName = project.ProjectCompany.ProviderCompany.CompanyName
             };
         }
 

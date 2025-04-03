@@ -4,6 +4,7 @@ using CompanyHubService.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CompanyHubService.Migrations
 {
     [DbContext(typeof(CompanyHubDbContext))]
-    partial class CompanyHubDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250317113359_ProjectTableUpdated")]
+    partial class ProjectTableUpdated
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -93,9 +96,8 @@ namespace CompanyHubService.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("CompanySize")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("CompanySize")
+                        .HasColumnType("int");
 
                     b.Property<string>("CoreExpertise")
                         .IsRequired()
@@ -119,9 +121,6 @@ namespace CompanyHubService.Migrations
                     b.Property<string>("Location")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<double>("OverallRating")
-                        .HasColumnType("float");
 
                     b.Property<string>("Phone")
                         .IsRequired()
@@ -296,38 +295,6 @@ namespace CompanyHubService.Migrations
                     b.HasIndex("ProviderCompanyId");
 
                     b.ToTable("ProjectCompanies");
-                });
-
-            modelBuilder.Entity("CompanyHubService.Models.Review", b =>
-                {
-                    b.Property<Guid>("ReviewId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("CompanyId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("DatePosted")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("Rating")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ReviewText")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("ReviewId");
-
-                    b.HasIndex("CompanyId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Reviews");
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.User", b =>
@@ -671,25 +638,6 @@ namespace CompanyHubService.Migrations
                     b.Navigation("ProviderCompany");
                 });
 
-            modelBuilder.Entity("CompanyHubService.Models.Review", b =>
-                {
-                    b.HasOne("CompanyHubService.Models.Company", "Company")
-                        .WithMany("Reviews")
-                        .HasForeignKey("CompanyId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("CompanyHubService.Models.User", "User")
-                        .WithMany("Reviews")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Company");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("CompanyHubService.Models.UserCompany", b =>
                 {
                     b.HasOne("CompanyHubService.Models.Company", "Company")
@@ -777,8 +725,6 @@ namespace CompanyHubService.Migrations
                     b.Navigation("Products");
 
                     b.Navigation("Projects");
-
-                    b.Navigation("Reviews");
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.Product", b =>
@@ -790,11 +736,6 @@ namespace CompanyHubService.Migrations
                 {
                     b.Navigation("ProjectCompany")
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("CompanyHubService.Models.User", b =>
-                {
-                    b.Navigation("Reviews");
                 });
 #pragma warning restore 612, 618
         }
