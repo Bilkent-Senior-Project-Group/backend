@@ -44,14 +44,18 @@ namespace CompanyHubService.DTOs
         public List<string> Partnerships { get; set; } = new List<string>(); // Not required
 
         // [Required]
-        public int CompanySize { get; set; }
+        public string CompanySize { get; set; }
 
         // [Required]
         public int FoundedYear { get; set; }
 
+        public double OverallRating { get; set; } = 0; // Default to 0
+
         // [Required]
         // [JsonPropertyName("contact_info")]  // Ensure correct mapping
-        public string ContactInfo { get; set; }
+        public string Phone { get; set; } = "Unknown"; // Default to "Unknown"
+
+        public string Email { get; set; } = "Unknown"; // Default to "Unknown"
 
         // [Required]
         public string Address { get; set; } = "Unknown"; // Default to "Unknown"

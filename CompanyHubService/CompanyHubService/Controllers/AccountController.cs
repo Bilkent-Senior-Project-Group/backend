@@ -58,8 +58,6 @@ public class AccountController : ControllerBase
         return BadRequest(result.Errors);
     }
 
-
-
     [HttpPost("Login")]
     public async Task<IActionResult> Login(LoginViewModel model)
     {
@@ -74,7 +72,6 @@ public class AccountController : ControllerBase
         {
             return Unauthorized(new { Message = "Invalid email or password." });
         }
-
 
         var (result, token) = await _authService.LoginUserAsync(model.Email, model.Password);
 
@@ -92,26 +89,34 @@ public class AccountController : ControllerBase
         if (user.Id != "9f4d21df-e8ab-473a-889d-d2eeaee28b32")
         {
             var companies = await _dbContext.UserCompanies
-            .Where(uc => uc.UserId == user.Id)
-            .Include(uc => uc.Company)
-            .Select(uc => new CompanyDTO
-            {
-                CompanyId = uc.Company.CompanyId,
-                CompanyName = uc.Company.CompanyName
-            })
-            .ToListAsync();
-
-
-            var projects = await _dbContext.UserCompanies
-            .Where(uc => uc.UserId == user.Id)
-            .Include(uc => uc.Company)
-            .ThenInclude(c => c.Projects)
-            .SelectMany(uc => uc.Company.Projects.Select(p => new ProjectDTO // ✅ Explicit Mapping
-            {
-                ProjectId = p.ProjectId,
-                ProjectName = p.ProjectName
-            }))
-            .ToListAsync();
+                .Where(uc => uc.UserId == user.Id)
+                .Include(uc => uc.Company)
+                .ThenInclude(c => c.Projects)
+                .Select(uc => new CompanyDTO
+                {
+                    CompanyId = uc.Company.CompanyId,
+                    CompanyName = uc.Company.CompanyName,
+                    Projects = _dbContext.ProjectCompanies
+                        .Where(pc => pc.ClientCompanyId == uc.Company.CompanyId || pc.ProviderCompanyId == uc.Company.CompanyId)
+                        .Select(pc => new ProjectDTO
+                        {
+                            ProjectId = pc.Project.ProjectId,
+                            ProjectName = pc.Project.ProjectName,
+                            Description = pc.Project.Description,
+                            TechnologiesUsed = pc.Project.TechnologiesUsed.Split(new[] { ", " }, StringSplitOptions.None).ToList(),
+                            Industry = pc.Project.Industry,
+                            ClientType = pc.Project.ClientType,
+                            Impact = pc.Project.Impact,
+                            StartDate = pc.Project.StartDate,
+                            CompletionDate = pc.Project.CompletionDate,
+                            IsOnCompedia = pc.Project.IsOnCompedia,
+                            IsCompleted = pc.Project.IsCompleted,
+                            ProjectUrl = pc.Project.ProjectUrl,
+                            ClientCompanyName = pc.ClientCompany.CompanyName,
+                            ProviderCompanyName = pc.ProviderCompany.CompanyName
+                        }).ToList()
+                })
+                .ToListAsync();
 
             userDTO = new UserDTO
             {
@@ -120,11 +125,9 @@ public class AccountController : ControllerBase
                 LastName = user.LastName,
                 Email = user.Email,
                 PhoneNumber = user.PhoneNumber,
-                Companies = companies,
-                Projects = projects
+                Companies = companies
             };
         }
-
         else
         {
             isAdmin = true;
@@ -135,11 +138,9 @@ public class AccountController : ControllerBase
                 LastName = user.LastName,
                 Email = user.Email,
                 PhoneNumber = user.PhoneNumber,
-                Companies = null,
-                Projects = null
+                Companies = null
             };
         }
-
 
         return Ok(new
         {
@@ -272,6 +273,4 @@ public class AccountController : ControllerBase
         // ✅ Return claims as JSON in the response
         return Ok(claims);
     }
-
-
 }

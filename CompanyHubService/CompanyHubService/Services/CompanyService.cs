@@ -30,7 +30,6 @@ namespace CompanyHubService.Services
         //used when a new user creates a company.
         public async Task<bool> CreateCompanyAsync(CreateCompanyRequestDTO request, string userId)
         {
-
             var company = new Company
             {
                 CompanyId = Guid.NewGuid(),
@@ -44,10 +43,10 @@ namespace CompanyHubService.Services
                 Website = request.Website,
                 CompanySize = request.CompanySize,
                 Verified = false,
-                ContactInfo = request.ContactInfo,
+                Phone = request.Phone,
+                Email = request.Email,
                 CoreExpertise = request.CoreExpertise
             };
-
 
             _dbContext.Companies.Add(company);
             await _dbContext.SaveChangesAsync();
@@ -61,42 +60,56 @@ namespace CompanyHubService.Services
             _dbContext.UserCompanies.Add(userCompany);
             await _dbContext.SaveChangesAsync();
 
-            // Check whether there is any portfolio is stored, if there are list them inside projects and store in Projects.
             if (request.Portfolio != null && request.Portfolio.Count > 0)
             {
-                var projects = request.Portfolio.Select(p => new Project
+                var projects = new List<Project>();
+                var projectCompanies = new List<ProjectCompany>();
+
+                foreach (var p in request.Portfolio)
                 {
-                    ProjectId = Guid.NewGuid(),
-                    ProjectName = p.ProjectName,
-                    Description = p.Description,
-                    TechnologiesUsed = string.Join(", ", p.TechnologiesUsed),
-                    Industry = p.Industry,
-                    ClientType = p.ClientType,
-                    Impact = p.Impact,
-                    StartDate = p.StartDate,
-                    CompletionDate = p.CompletionDate,
-                    IsOnCompedia = false,
-                    IsCompleted = p.IsCompleted,
-                    ProjectUrl = p.ProjectUrl
-                }).ToList();
+                    var clientCompany = await _dbContext.Companies
+                        .FirstOrDefaultAsync(c => c.CompanyName == p.ClientCompanyName);
+
+                    var providerCompany = await _dbContext.Companies
+                        .FirstOrDefaultAsync(c => c.CompanyName == p.ProviderCompanyName);
+
+                    var newProject = new Project
+                    {
+                        ProjectId = Guid.NewGuid(),
+                        ProjectName = p.ProjectName,
+                        Description = p.Description,
+                        TechnologiesUsed = string.Join(", ", p.TechnologiesUsed),
+                        Industry = p.Industry,
+                        ClientType = p.ClientType,
+                        Impact = p.Impact,
+                        StartDate = p.StartDate,
+                        CompletionDate = p.CompletionDate,
+                        IsOnCompedia = false,
+                        IsCompleted = p.IsCompleted,
+                        ProjectUrl = p.ProjectUrl
+                    };
+
+                    projects.Add(newProject);
+
+                    // Create project-company mapping
+                    var newProjectCompany = new ProjectCompany
+                    {
+                        ProjectId = newProject.ProjectId,
+                        ClientCompanyId = clientCompany?.CompanyId, // Null if not found
+                        ProviderCompanyId = providerCompany?.CompanyId // Null if not found
+                    };
+
+                    projectCompanies.Add(newProjectCompany);
+                }
 
                 _dbContext.Projects.AddRange(projects);
-                await _dbContext.SaveChangesAsync();
-
-                var projectCompanies = projects.Select(p => new ProjectCompany
-                {
-                    ProjectId = p.ProjectId,
-                    ClientCompanyId = company.CompanyId,
-                    ProviderCompanyId = null
-                }).ToList();
-
                 _dbContext.ProjectCompanies.AddRange(projectCompanies);
                 await _dbContext.SaveChangesAsync();
-
             }
 
             return true;
         }
+
 
         public async Task<bool> ModifyCompanyProfileAsync(CompanyProfileDTO companyProfileDTO)
         {
@@ -189,7 +202,8 @@ namespace CompanyHubService.Services
                         Website = companyDto.Website,
                         CompanySize = companyDto.CompanySize,
                         FoundedYear = companyDto.FoundedYear,
-                        ContactInfo = companyDto.ContactInfo,
+                        Phone = companyDto.Phone,
+                        Email = companyDto.Email,
                         Address = companyDto.Address,
                         Verified = companyDto.Verified == 0
                     };
