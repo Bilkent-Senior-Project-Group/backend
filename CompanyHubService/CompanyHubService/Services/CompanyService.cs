@@ -329,7 +329,7 @@ namespace CompanyHubService.Services
                     {
                         CompanyId = c.CompanyId,
                         Name = c.CompanyName,
-                        Size = c.CompanySize,
+                        Size = c.CompanySize.ToString(),
                         Location = c.Location,
                         Specialties = c.Specialties,
                         Description = c.Description
