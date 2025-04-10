@@ -66,7 +66,7 @@ namespace CompanyHubService.Services
                 return "The selected provider company is not verified.";
 
             if (!clientCompany.Verified)
-                return "You cannot make project requests. Please verify your company.";
+                return "The selected client company is not verified.";
 
             var projectRequest = new ProjectRequest
             {

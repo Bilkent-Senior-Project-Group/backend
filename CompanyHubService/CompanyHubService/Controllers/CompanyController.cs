@@ -332,6 +332,26 @@ namespace CompanyHubService.Controllers
             return Ok(new { Message = "Logo deleted successfully." });
         }
 
+        [HttpGet("SearchCompaniesByName")]
+        public async Task<IActionResult> SearchCompaniesByName([FromQuery] string query)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+                return BadRequest("Query is required.");
+
+            var results = await dbContext.Companies
+                .Where(c => c.CompanyName.Contains(query))
+                .Select(c => new
+                {
+                    c.CompanyId,
+                    c.CompanyName
+                })
+                .Take(10)
+                .ToListAsync();
+
+            return Ok(results);
+        }
+
+
 
     }
 
