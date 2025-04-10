@@ -37,10 +37,6 @@ namespace CompanyHubService.DTOs
         // [Required]
         public string Website { get; set; }
 
-        // [Required]
-        // [JsonPropertyName("technologies_used")]  // Ensure correct mapping
-        public List<string> TechnologiesUsed { get; set; } = new List<string>();
-
         public List<string> Partnerships { get; set; } = new List<string>(); // Not required
 
         // [Required]

@@ -25,13 +25,16 @@ namespace CompanyHubService.Controllers
 
         private readonly CompanyHubDbContext dbContext;
 
-        public CompanyController(IPdfExtractionService pdfExtractionService, CompanyService companyService, UserService userService, UserManager<User> userManager, CompanyHubDbContext dbContext)
+        private readonly BlobStorageService blobStorageService;
+
+        public CompanyController(IPdfExtractionService pdfExtractionService, CompanyService companyService, UserService userService, UserManager<User> userManager, CompanyHubDbContext dbContext, BlobStorageService blobStorageService)
         {
             this.pdfExtractionService = pdfExtractionService;
             this.companyService = companyService;
             this.userService = userService;
             this.userManager = userManager;
             this.dbContext = dbContext;
+            this.blobStorageService = blobStorageService;
         }
 
         [HttpPost("extract-from-pdf")]
@@ -289,5 +292,45 @@ namespace CompanyHubService.Controllers
             // Return it as ContentResult with proper content type
             return Content(rawJsonResult, "application/json");
         }
+
+        [HttpPost("UploadLogo/{companyId}")]
+        public async Task<IActionResult> UploadCompanyLogo(Guid companyId, IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("No file uploaded.");
+
+            var company = await dbContext.Companies.FindAsync(companyId);
+            if (company == null)
+                return NotFound("Company not found.");
+
+            var fileName = $"{companyId}_{file.FileName}";
+            using var stream = file.OpenReadStream();
+            var logoUrl = await blobStorageService.UploadLogoAsync(stream, fileName);
+
+            company.LogoUrl = logoUrl;
+            await dbContext.SaveChangesAsync();
+
+            return Ok(new { Message = "Logo uploaded successfully.", LogoUrl = logoUrl });
+        }
+
+        [HttpDelete("DeleteLogo/{companyId}")]
+        public async Task<IActionResult> DeleteCompanyLogo(Guid companyId)
+        {
+            var company = await dbContext.Companies.FindAsync(companyId);
+            if (company == null || string.IsNullOrEmpty(company.LogoUrl))
+                return NotFound("Logo not found.");
+
+            var fileName = company.LogoUrl.Split('/').Last(); // Extract file name
+            await blobStorageService.DeleteLogoAsync(fileName);
+
+            company.LogoUrl = null;
+            await dbContext.SaveChangesAsync();
+
+            return Ok(new { Message = "Logo deleted successfully." });
+        }
+
+
     }
+
+
 }
