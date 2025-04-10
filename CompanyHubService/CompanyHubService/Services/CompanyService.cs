@@ -365,7 +365,7 @@ namespace CompanyHubService.Services
                               c.Description,
                               r.Distance
                           })
-                    .OrderBy(r => r.Distance)
+                    .OrderByDescending(r => r.Distance)
                     .ToList();
 
                 return JsonConvert.SerializeObject(new
