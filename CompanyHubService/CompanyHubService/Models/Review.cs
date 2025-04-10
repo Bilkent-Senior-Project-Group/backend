@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace CompanyHubService.Models
 {
     // Review on a company
@@ -9,8 +11,8 @@ namespace CompanyHubService.Models
         public DateTime DatePosted { get; set; }
 
         // Nav prop
-        public Guid CompanyId { get; set; }
-        public Company Company { get; set; }
+        public Guid ProjectId { get; set; }
+        public Project Project { get; set; }
 
         public string UserId { get; set; }
         public User User { get; set; }

@@ -7,8 +7,10 @@ namespace CompanyHubService.DTOs
         public int Rating { get; set; }
         public DateTime DatePosted { get; set; }
 
-        public string CompanyName { get; set; }
+        public string ProjectName { get; set; }
         public string UserName { get; set; }
+
+        public string ProviderCompanyName { get; set; }
     }
 
 }
