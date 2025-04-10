@@ -293,7 +293,9 @@ namespace CompanyHubService.Controllers
             return Content(rawJsonResult, "application/json");
         }
 
+        // Update this method in such a way that only the root user of the company should be able to add logo.
         [HttpPost("UploadLogo/{companyId}")]
+        [Consumes("multipart/form-data")] // for swagger test
         public async Task<IActionResult> UploadCompanyLogo(Guid companyId, IFormFile file)
         {
             if (file == null || file.Length == 0)
@@ -313,6 +315,7 @@ namespace CompanyHubService.Controllers
             return Ok(new { Message = "Logo uploaded successfully.", LogoUrl = logoUrl });
         }
 
+        // Update this method in such a way that only the root user of the company should be able to delete logo.
         [HttpDelete("DeleteLogo/{companyId}")]
         public async Task<IActionResult> DeleteCompanyLogo(Guid companyId)
         {
