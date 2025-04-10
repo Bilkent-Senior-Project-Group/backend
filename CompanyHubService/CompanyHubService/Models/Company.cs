@@ -31,6 +31,8 @@ namespace CompanyHubService.Models
         public string Email { get; set; }
 
         public double OverallRating { get; set; } = 0;
+
+        public string LogoUrl { get; set; }
         public List<Project> Projects { get; set; } = new List<Project>();
         // Navigation property for Products
         public ICollection<Product> Products { get; set; } // One-to-Many relationship
