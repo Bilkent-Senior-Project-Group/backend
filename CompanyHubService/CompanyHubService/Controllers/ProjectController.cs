@@ -44,6 +44,7 @@ public class ProjectController : ControllerBase
 
     // Here the root user selects his/her company as the client company.
     // The root user can select his/her company from a dropdown list of his/her companies.
+    // WE CAN DELETE THIS IF THE LATTER WORKS.
     [HttpPost("CreateProjectRequest")]
     [Authorize(Roles = "Root")] // Only root user can create a project request.   
     public async Task<IActionResult> CreateProjectRequest([FromBody] ProjectRequestDTO request)
@@ -54,6 +55,36 @@ public class ProjectController : ControllerBase
 
         return Ok(new { Message = result });
     }
+
+    [HttpPost("CreateProjectRequestByName")]
+    [Authorize(Roles = "Root")]
+    public async Task<IActionResult> CreateProjectRequestByName([FromBody] ProjectRequestByNameDTO request)
+    {
+        var clientCompany = await dbContext.Companies.FirstOrDefaultAsync(c => c.CompanyName == request.ClientCompanyName);
+        var providerCompany = await dbContext.Companies.FirstOrDefaultAsync(c => c.CompanyName == request.ProviderCompanyName);
+
+        if (clientCompany == null || providerCompany == null)
+            return BadRequest(new { Message = "Client or provider company not found." });
+
+        var converted = new ProjectRequestDTO
+        {
+            ClientCompanyId = clientCompany.CompanyId,
+            ProviderCompanyId = providerCompany.CompanyId,
+            ProjectName = request.ProjectName,
+            Description = request.Description,
+            TechnologiesUsed = request.TechnologiesUsed,
+            Industry = request.Industry,
+            ClientType = request.ClientType,
+            Impact = request.Impact
+        };
+
+        var result = await projectService.CreateProjectRequestAsync(converted);
+        if (result != "Project request sent successfully.")
+            return BadRequest(new { Message = result });
+
+        return Ok(new { Message = result });
+    }
+
 
     [HttpGet("GetProjectRequest/{requestId}")]
     [Authorize(Roles = "Root, Admin, VerifiedUser")] // Only users that are in the either ClientCompany or ProviderCompany can get the project request.
