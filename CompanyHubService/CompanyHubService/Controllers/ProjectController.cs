@@ -141,4 +141,80 @@ public class ProjectController : ControllerBase
 
         return Ok(new { Message = result });
     }
+
+    [HttpPost("MarkProjectAsCompleted/{projectId}")]
+    [Authorize(Roles = "Root, VerifiedUser")]
+    public async Task<IActionResult> MarkProjectAsCompleted(Guid projectId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        var project = await dbContext.Projects
+            .Include(p => p.ProjectCompany)
+            .FirstOrDefaultAsync(p => p.ProjectId == projectId);
+
+        if (project == null)
+            return NotFound("Project not found.");
+
+        var userCompany = await dbContext.UserCompanies
+            .FirstOrDefaultAsync(uc => uc.UserId == userId &&
+                (uc.CompanyId == project.ProjectCompany.ClientCompanyId || uc.CompanyId == project.ProjectCompany.ProviderCompanyId));
+
+        if (userCompany == null)
+            return BadRequest("You are not part of this project.");
+
+        var isClient = userCompany.CompanyId == project.ProjectCompany.ClientCompanyId;
+        var isProvider = userCompany.CompanyId == project.ProjectCompany.ProviderCompanyId;
+
+        if (isClient)
+        {
+            if (project.ClientMarkedCompleted)
+                return BadRequest("Client has already marked this project as completed.");
+            project.ClientMarkedCompleted = true;
+        }
+        else if (isProvider)
+        {
+            if (project.ProviderMarkedCompleted)
+                return BadRequest("Provider has already marked this project as completed.");
+            project.ProviderMarkedCompleted = true;
+        }
+
+        // ✅ If both sides marked completed, finalize the project
+        if (project.ClientMarkedCompleted && project.ProviderMarkedCompleted)
+        {
+            project.IsCompleted = true;
+            project.CompletionDate = DateTime.UtcNow;
+
+            // ✅ Send notification to the Root user of the ClientCompany
+            var rootUser = await dbContext.UserCompanies
+                .Where(uc => uc.CompanyId == project.ProjectCompany.ClientCompanyId)
+                .Include(uc => uc.User)
+                .Where(uc => dbContext.UserRoles
+                    .Any(ur => ur.UserId == uc.UserId && ur.RoleId == dbContext.Roles
+                        .Where(r => r.Name == "Root")
+                        .Select(r => r.Id)
+                        .FirstOrDefault()))
+                .Select(uc => uc.User)
+                .FirstOrDefaultAsync();
+
+            if (rootUser != null)
+            {
+                await notificationService.CreateNotificationAsync(
+                    recipientId: rootUser.Id,
+                    message: $"The project '{project.ProjectName}' has been marked completed by both parties.",
+                    notificationType: "Project",
+                    url: $"/projects/{project.ProjectId}" // Or wherever you route to project details
+                );
+            }
+        }
+
+        await dbContext.SaveChangesAsync();
+
+        return Ok(new
+        {
+            Message = "Your completion has been saved.",
+            FullyCompleted = project.IsCompleted
+        });
+    }
+
+
 }

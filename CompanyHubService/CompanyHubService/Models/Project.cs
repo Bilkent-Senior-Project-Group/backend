@@ -14,6 +14,8 @@ namespace CompanyHubService.Models
         public DateTime StartDate { get; set; }
         public DateTime CompletionDate { get; set; }
         public bool IsOnCompedia { get; set; }
+        public bool ClientMarkedCompleted { get; set; } = false;
+        public bool ProviderMarkedCompleted { get; set; } = false;
         public bool IsCompleted { get; set; } = false;
         public string? ProjectUrl { get; set; }
 
