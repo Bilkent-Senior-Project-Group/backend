@@ -34,10 +34,33 @@ public class ReviewsController : ControllerBase
             return Unauthorized(new { Message = "User ID not found in token." });
         }
 
-        var company = await _dbContext.Companies.FindAsync(reviewDto.CompanyId);
-        if (company == null)
+        var project = await _dbContext.Projects
+        .Include(p => p.ProjectCompany)
+        .ThenInclude(pc => pc.ProviderCompany)
+        .Include(p => p.ProjectCompany.ClientCompany)
+        .FirstOrDefaultAsync(p => p.ProjectId == reviewDto.ProjectId);
+
+        if (project == null || !project.IsCompleted)
         {
-            return NotFound(new { Message = "Company not found." });
+            return BadRequest("Project not found or not completed yet.");
+        }
+
+        // Ensure the user is part of the client company
+        var isClientUser = await _dbContext.UserCompanies.AnyAsync(uc =>
+            uc.UserId == userId && uc.CompanyId == project.ProjectCompany.ClientCompanyId);
+
+        if (!isClientUser)
+        {
+            return Forbid("Only users from the client company can submit a review.");
+        }
+
+        // Optional: prevent duplicate reviews by same user on the same project
+        var existingReview = await _dbContext.Reviews.AnyAsync(r =>
+            r.ProjectId == reviewDto.ProjectId && r.UserId == userId);
+
+        if (existingReview)
+        {
+            return BadRequest("You have already reviewed this project.");
         }
 
         var review = new Review
@@ -46,14 +69,14 @@ public class ReviewsController : ControllerBase
             ReviewText = reviewDto.ReviewText,
             Rating = reviewDto.Rating,
             DatePosted = DateTime.UtcNow,
-            CompanyId = reviewDto.CompanyId,
+            ProjectId = reviewDto.ProjectId,
             UserId = userId
         };
 
         _dbContext.Reviews.Add(review);
         await _dbContext.SaveChangesAsync();
 
-        await UpdateCompanyRating(review.CompanyId);
+        await UpdateCompanyRating(project.ProjectCompany.ProviderCompanyId);
 
         // ✅ Create response DTO
         var reviewResponse = new ReviewResponseDTO
@@ -62,7 +85,8 @@ public class ReviewsController : ControllerBase
             ReviewText = review.ReviewText,
             Rating = review.Rating,
             DatePosted = review.DatePosted,
-            CompanyName = company.CompanyName,
+            ProjectName = project.ProjectName,
+            ProviderCompanyName = project.ProjectCompany.ProviderCompany?.CompanyName,
             UserName = (await _dbContext.Users.FindAsync(userId))?.UserName
         };
 
@@ -75,9 +99,12 @@ public class ReviewsController : ControllerBase
     public async Task<IActionResult> GetReview(Guid id)
     {
         var review = await _dbContext.Reviews
-            .Include(r => r.Company)
-            .Include(r => r.User)
-            .FirstOrDefaultAsync(r => r.ReviewId == id);
+        .Include(r => r.User)
+        .Include(r => r.Project)
+            .ThenInclude(p => p.ProjectCompany) // include ProjectCompany
+        .ThenInclude(pc => pc.ProviderCompany) // then ProviderCompany from that
+        .FirstOrDefaultAsync(r => r.ReviewId == id);
+
 
         if (review == null)
         {
@@ -90,54 +117,85 @@ public class ReviewsController : ControllerBase
             ReviewText = review.ReviewText,
             Rating = review.Rating,
             DatePosted = review.DatePosted,
-            CompanyName = review.Company.CompanyName, // ✅ Get company name
-            UserName = review.User.UserName // ✅ Get user name instead of ID
+            ProjectName = review.Project.ProjectName,
+            ProviderCompanyName = review.Project.ProjectCompany?.ProviderCompany?.CompanyName,
+            UserName = review.User?.UserName
         };
 
         return Ok(reviewDto);
     }
 
-    [HttpGet("ByCompany/{companyId}")]
-    public async Task<IActionResult> GetReviewsForCompany(Guid companyId)
+
+    [HttpGet("ByProject/{projectId}")]
+    public async Task<IActionResult> GetReviewsForProject(Guid projectId)
     {
+        var project = await _dbContext.Projects
+            .Include(p => p.ProjectCompany)
+                .ThenInclude(pc => pc.ProviderCompany)
+            .FirstOrDefaultAsync(p => p.ProjectId == projectId);
+
+        if (project == null)
+            return NotFound(new { Message = "Project not found." });
+
         var reviews = await _dbContext.Reviews
-            .Where(r => r.CompanyId == companyId)
+            .Where(r => r.ProjectId == projectId)
             .Include(r => r.User)
-            .Include(r => r.Company)
             .Select(r => new ReviewResponseDTO
             {
                 ReviewId = r.ReviewId,
                 ReviewText = r.ReviewText,
                 Rating = r.Rating,
                 DatePosted = r.DatePosted,
-                CompanyName = r.Company.CompanyName, // ✅ Get company name
-                UserName = r.User.UserName // ✅ Get user name instead of ID
+                ProjectName = project.ProjectName,
+                ProviderCompanyName = project.ProjectCompany.ProviderCompany.CompanyName,
+                UserName = r.User.UserName
             })
             .ToListAsync();
 
         return Ok(reviews);
     }
 
-    private async Task UpdateCompanyRating(Guid companyId)
+
+    private async Task UpdateCompanyRating(Guid? companyId)
     {
-        var company = await _dbContext.Companies
-            .Include(c => c.Reviews)
-            .FirstOrDefaultAsync(c => c.CompanyId == companyId);
+        // Get all project IDs where the company is the provider
+        var providerProjectIds = await _dbContext.ProjectCompanies
+            .Where(pc => pc.ProviderCompanyId == companyId)
+            .Select(pc => pc.ProjectId)
+            .ToListAsync();
 
-        if (company != null)
+        if (providerProjectIds == null || !providerProjectIds.Any())
         {
-            var totalReviews = company.Reviews.Count;
-            if (totalReviews > 0)
+            var company = await _dbContext.Companies.FindAsync(companyId);
+            if (company != null)
             {
-                company.OverallRating = company.Reviews.Average(r => r.Rating);
+                company.OverallRating = 0;
+                await _dbContext.SaveChangesAsync();
             }
-            else
-            {
-                company.OverallRating = 0; // Reset if there are no reviews
-            }
-
-            await _dbContext.SaveChangesAsync();
+            return;
         }
+
+        // Get all reviews tied to those projects
+        var ratings = await _dbContext.Reviews
+            .Where(r => providerProjectIds.Contains(r.ProjectId))
+            .Select(r => r.Rating)
+            .ToListAsync();
+
+        var companyToUpdate = await _dbContext.Companies.FindAsync(companyId);
+        if (companyToUpdate == null)
+            return;
+
+        if (ratings.Any())
+        {
+            companyToUpdate.OverallRating = ratings.Average();
+        }
+        else
+        {
+            companyToUpdate.OverallRating = 0;
+        }
+
+        await _dbContext.SaveChangesAsync();
     }
+
 
 }
