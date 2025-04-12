@@ -4,6 +4,7 @@ using CompanyHubService.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CompanyHubService.Migrations
 {
     [DbContext(typeof(CompanyHubDbContext))]
-    partial class CompanyHubDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250410171048_ReviewUpdate")]
+    partial class ReviewUpdate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -43,6 +46,10 @@ namespace CompanyHubService.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Impact")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Industry")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -93,6 +100,10 @@ namespace CompanyHubService.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("CoreExpertise")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -104,8 +115,13 @@ namespace CompanyHubService.Migrations
                     b.Property<int>("FoundedYear")
                         .HasColumnType("int");
 
-                    b.Property<int>("Location")
-                        .HasColumnType("int");
+                    b.Property<string>("Industries")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Location")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("LogoUrl")
                         .IsRequired()
@@ -115,6 +131,10 @@ namespace CompanyHubService.Migrations
                         .HasColumnType("float");
 
                     b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Specialties")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -128,21 +148,6 @@ namespace CompanyHubService.Migrations
                     b.HasKey("CompanyId");
 
                     b.ToTable("Companies");
-                });
-
-            modelBuilder.Entity("CompanyHubService.Models.Industry", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Industries");
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.Notification", b =>
@@ -248,6 +253,14 @@ namespace CompanyHubService.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Impact")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Industry")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<bool>("IsCompleted")
                         .HasColumnType("bit");
 
@@ -333,90 +346,6 @@ namespace CompanyHubService.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Reviews");
-                });
-
-            modelBuilder.Entity("CompanyHubService.Models.Service", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("IndustryId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid?>("ProjectRequestRequestId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("IndustryId");
-
-                    b.HasIndex("ProjectRequestRequestId");
-
-                    b.ToTable("Services");
-                });
-
-            modelBuilder.Entity("CompanyHubService.Models.ServiceCompany", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<Guid>("CompanyId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("CompanyId1")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("Percentage")
-                        .HasColumnType("int");
-
-                    b.Property<Guid>("ServiceId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CompanyId");
-
-                    b.HasIndex("CompanyId1");
-
-                    b.HasIndex("ServiceId");
-
-                    b.ToTable("ServiceCompanies");
-                });
-
-            modelBuilder.Entity("CompanyHubService.Models.ServiceProject", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<Guid>("ProjectId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("ProjectId1")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("ServiceId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProjectId");
-
-                    b.HasIndex("ProjectId1");
-
-                    b.HasIndex("ServiceId");
-
-                    b.ToTable("ServiceProjects");
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.User", b =>
@@ -783,67 +712,6 @@ namespace CompanyHubService.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("CompanyHubService.Models.Service", b =>
-                {
-                    b.HasOne("CompanyHubService.Models.Industry", "Industry")
-                        .WithMany()
-                        .HasForeignKey("IndustryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("CompanyHubService.Data.ProjectRequest", null)
-                        .WithMany("Services")
-                        .HasForeignKey("ProjectRequestRequestId");
-
-                    b.Navigation("Industry");
-                });
-
-            modelBuilder.Entity("CompanyHubService.Models.ServiceCompany", b =>
-                {
-                    b.HasOne("CompanyHubService.Models.Company", "Company")
-                        .WithMany()
-                        .HasForeignKey("CompanyId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("CompanyHubService.Models.Company", null)
-                        .WithMany("ServiceCompanies")
-                        .HasForeignKey("CompanyId1");
-
-                    b.HasOne("CompanyHubService.Models.Service", "Service")
-                        .WithMany()
-                        .HasForeignKey("ServiceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Company");
-
-                    b.Navigation("Service");
-                });
-
-            modelBuilder.Entity("CompanyHubService.Models.ServiceProject", b =>
-                {
-                    b.HasOne("CompanyHubService.Models.Project", "Project")
-                        .WithMany()
-                        .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("CompanyHubService.Models.Project", null)
-                        .WithMany("ServiceProjects")
-                        .HasForeignKey("ProjectId1");
-
-                    b.HasOne("CompanyHubService.Models.Service", "Service")
-                        .WithMany()
-                        .HasForeignKey("ServiceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Project");
-
-                    b.Navigation("Service");
-                });
-
             modelBuilder.Entity("CompanyHubService.Models.UserCompany", b =>
                 {
                     b.HasOne("CompanyHubService.Models.Company", "Company")
@@ -924,11 +792,6 @@ namespace CompanyHubService.Migrations
                     b.Navigation("Company");
                 });
 
-            modelBuilder.Entity("CompanyHubService.Data.ProjectRequest", b =>
-                {
-                    b.Navigation("Services");
-                });
-
             modelBuilder.Entity("CompanyHubService.Models.Company", b =>
                 {
                     b.Navigation("ClientProductClients");
@@ -938,8 +801,6 @@ namespace CompanyHubService.Migrations
                     b.Navigation("Projects");
 
                     b.Navigation("Reviews");
-
-                    b.Navigation("ServiceCompanies");
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.Product", b =>
@@ -951,8 +812,6 @@ namespace CompanyHubService.Migrations
                 {
                     b.Navigation("ProjectCompany")
                         .IsRequired();
-
-                    b.Navigation("ServiceProjects");
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.User", b =>
