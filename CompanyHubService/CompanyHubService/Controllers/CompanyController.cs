@@ -139,18 +139,20 @@ namespace CompanyHubService.Controllers
                     ProjectName = pc.Project.ProjectName,
                     Description = pc.Project.Description,
                     TechnologiesUsed = pc.Project.TechnologiesUsed.Split(new[] { ", " }, StringSplitOptions.None).ToList(),
-                    Industry = pc.Project.Industry,
                     ClientType = pc.Project.ClientType,
-                    Impact = pc.Project.Impact,
                     StartDate = pc.Project.StartDate,
                     CompletionDate = pc.Project.CompletionDate,
                     IsOnCompedia = pc.Project.IsOnCompedia,
                     IsCompleted = pc.Project.IsCompleted,
                     ProjectUrl = pc.Project.ProjectUrl,
                     ClientCompanyName = pc.ClientCompany.CompanyName,
-                    ProviderCompanyName = pc.ProviderCompany.CompanyName
+                    ProviderCompanyName = pc.ProviderCompany.CompanyName,
+                    //Services eklenecek
                 })
                 .ToListAsync();
+
+            var services = await dbContext.ServiceCompanies
+                .Where(sc => sc.CompanyId == company.CompanyId).ToListAsync();
 
             var companyDTO = new CompanyProfileDTO
             {
@@ -159,8 +161,6 @@ namespace CompanyHubService.Controllers
                 Description = company.Description,
                 FoundedYear = company.FoundedYear,
                 Address = company.Address,
-                Specialties = company.Specialties,
-                Industries = company.Industries?.Split(", ").ToList() ?? new List<string>(),
                 Location = company.Location,
                 Website = company.Website,
                 Verified = company.Verified ? 1 : 0,
@@ -168,8 +168,8 @@ namespace CompanyHubService.Controllers
                 Phone = company.Phone,
                 Email = company.Email,
                 OverallRating = company.OverallRating,
-                CoreExpertise = company.CoreExpertise?.Split(", ").ToList() ?? new List<string>(),
-                Projects = projects
+                Projects = projects,
+                Services = services
             };
 
             return Ok(companyDTO);
@@ -261,7 +261,7 @@ namespace CompanyHubService.Controllers
         {
             var companies = await dbContext.Companies
                 .Where(c => c.Verified)
-                .OrderByDescending(c => c.FoundedYear) // we can change it to rating??
+                .OrderByDescending(c => c.FoundedYear) // You can change this to rating if needed
                 .Take(10)
                 .Select(c => new CompanyProfileDTO
                 {
@@ -270,7 +270,9 @@ namespace CompanyHubService.Controllers
                     Description = c.Description,
                     Location = c.Location,
                     CompanySize = c.CompanySize,
-                    Specialties = c.Specialties
+                    Services = c.ServiceCompanies  // Updated property name
+                        .Where(sc => sc.CompanyId == c.CompanyId)
+                        .ToList()
                 })
                 .ToListAsync();
 

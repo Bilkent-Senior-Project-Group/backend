@@ -9,6 +9,7 @@ using System.Net.Http;
 using Newtonsoft.Json;
 using System.Text;
 using Newtonsoft.Json.Linq;
+using iText.Commons.Actions.Contexts;
 
 namespace CompanyHubService.Services
 {
@@ -37,33 +38,42 @@ namespace CompanyHubService.Services
                 Description = request.Description,
                 FoundedYear = request.FoundedYear,
                 Address = request.Address,
-                Specialties = request.Specialties,
-                Industries = request.Industries,
-                Location = request.Location,
                 Website = request.Website,
                 CompanySize = request.CompanySize,
                 Verified = false,
                 Phone = request.Phone,
                 Email = request.Email,
-                CoreExpertise = request.CoreExpertise
             };
 
-            _dbContext.Companies.Add(company);
-            await _dbContext.SaveChangesAsync();
+            // Create ServiceCompany mappings
+            var serviceCompanies = request.Services.Select(item => new ServiceCompany
+            {
+                CompanyId = company.CompanyId,
+                ServiceId = item,
+            }).ToList();
 
+            // Add the company and service mappings to the DbContext
+            _dbContext.Companies.Add(company);
+
+            // Add the project-service mappings to the DbContext in a single operation
+            if (serviceCompanies.Any())
+            {
+                _dbContext.ServiceCompanies.AddRange(serviceCompanies);
+            }
+
+            // Create UserCompany mapping
             var userCompany = new UserCompany
             {
                 UserId = userId,
                 CompanyId = company.CompanyId,
             };
-
             _dbContext.UserCompanies.Add(userCompany);
-            await _dbContext.SaveChangesAsync();
 
-            if (request.Portfolio != null && request.Portfolio.Count > 0)
+            if (request.Portfolio != null && request.Portfolio.Any())
             {
                 var projects = new List<Project>();
                 var projectCompanies = new List<ProjectCompany>();
+                var projectServices = new List<ServiceProject>(); // List to hold project-service mappings
 
                 foreach (var p in request.Portfolio)
                 {
@@ -79,9 +89,7 @@ namespace CompanyHubService.Services
                         ProjectName = p.ProjectName,
                         Description = p.Description,
                         TechnologiesUsed = string.Join(", ", p.TechnologiesUsed),
-                        Industry = p.Industry,
                         ClientType = p.ClientType,
-                        Impact = p.Impact,
                         StartDate = p.StartDate,
                         CompletionDate = p.CompletionDate,
                         IsOnCompedia = false,
@@ -100,12 +108,33 @@ namespace CompanyHubService.Services
                     };
 
                     projectCompanies.Add(newProjectCompany);
+
+                    // Add Project-Service mappings
+                    if (p.Services != null && p.Services.Any())
+                    {
+                        var projectServiceMappings = p.Services.Select(serviceId => new ServiceProject
+                        {
+                            ProjectId = newProject.ProjectId,
+                            ServiceId = serviceId.Id
+                        }).ToList();
+
+                        projectServices.AddRange(projectServiceMappings);
+                    }
                 }
 
+                // Add all projects, project-company mappings, and project-service mappings
                 _dbContext.Projects.AddRange(projects);
                 _dbContext.ProjectCompanies.AddRange(projectCompanies);
-                await _dbContext.SaveChangesAsync();
+
+                // Add the project-service mappings to the DbContext in a single operation
+                if (projectServices.Any())
+                {
+                    _dbContext.ServiceProjects.AddRange(projectServices);
+                }
             }
+
+            // Save all changes in a single transaction
+            await _dbContext.SaveChangesAsync();
 
             return true;
         }
@@ -195,9 +224,6 @@ namespace CompanyHubService.Services
                     {
                         CompanyId = companyId,
                         CompanyName = companyDto.Name,
-                        Specialties = companyDto.Specialties,
-                        Industries = string.Join(", ", companyDto.Industries ?? new List<string>()),
-                        CoreExpertise = string.Join(", ", companyDto.CoreExpertise ?? new List<string>()),
                         Location = companyDto.Location,
                         Website = companyDto.Website,
                         CompanySize = companyDto.CompanySize,
@@ -205,8 +231,10 @@ namespace CompanyHubService.Services
                         Phone = companyDto.Phone,
                         Email = companyDto.Email,
                         Address = companyDto.Address,
-                        Verified = companyDto.Verified == 0
+                        Verified = companyDto.Verified == 0,
                     };
+
+                    _dbContext.ServiceCompanies.AddRange(companyDto.Services);
 
                     companiesToInsert.Add(company);
 
@@ -220,12 +248,23 @@ namespace CompanyHubService.Services
                                 ProjectName = projectDto.ProjectName,
                                 Description = projectDto.Description,
                                 TechnologiesUsed = string.Join(", ", projectDto.TechnologiesUsed ?? new List<string>()),
-                                Industry = projectDto.Industry,
                                 ClientType = projectDto.ClientType,
-                                Impact = projectDto.Impact,
                                 StartDate = projectDto.StartDate,
                                 ProjectUrl = projectDto.ProjectUrl
                             };
+
+                            if (projectDto.Services != null && projectDto.Services.Any())
+                            {
+                                var projectServiceMappings = projectDto.Services.Select(serviceId => new ServiceProject
+                                {
+                                    ProjectId = project.ProjectId,
+                                    ServiceId = serviceId.Id
+                                }).ToList();
+
+                                projectServiceMappings.AddRange(projectServiceMappings);
+
+                                _dbContext.ServiceProjects.AddRange(projectServiceMappings);
+                            }
 
                             projectsToInsert.Add(project);
                         }
@@ -264,9 +303,7 @@ namespace CompanyHubService.Services
                 {
                     id = company.CompanyId,
                     name = company.CompanyName,
-                    specialties = company.Specialties,
-                    core_expertise = company.CoreExpertise,
-                    industries = company.Industries,
+                    //services eklenecek
                     location = company.Location,
                     technologies_used = projectsToInsert
                     .Where(p => projectCompaniesToInsert
@@ -345,7 +382,6 @@ namespace CompanyHubService.Services
                         Name = c.CompanyName,
                         Size = c.CompanySize.ToString(),
                         Location = c.Location,
-                        Specialties = c.Specialties,
                         Description = c.Description
                     })
                     .ToListAsync();
@@ -361,7 +397,6 @@ namespace CompanyHubService.Services
                               c.Name,
                               c.Size,
                               c.Location,
-                              c.Specialties,
                               c.Description,
                               r.Distance
                           })

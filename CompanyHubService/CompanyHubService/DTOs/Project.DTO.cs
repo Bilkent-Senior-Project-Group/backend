@@ -13,11 +13,9 @@ namespace CompanyHubService.DTOs
 
         //[JsonPropertyName("technologies_used")]  // Explicitly map JSON field
         public List<string> TechnologiesUsed { get; set; } // List for easier input
-        public string Industry { get; set; }
 
         //[JsonPropertyName("client_type")]  // Explicitly map JSON field
         public string ClientType { get; set; }
-        public string Impact { get; set; }
         public DateTime StartDate { get; set; }
 
         public DateTime CompletionDate { get; set; }
@@ -31,6 +29,8 @@ namespace CompanyHubService.DTOs
 
         //[JsonPropertyName("project_url")]  // Explicitly map JSON field
         public string ProjectUrl { get; set; }
+
+        public List<Service> Services { get; set; }
 
     }
 }

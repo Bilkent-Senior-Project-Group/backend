@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using CompanyHubService.Models;
 
 namespace CompanyHubService.DTOs
 {
@@ -19,10 +20,9 @@ namespace CompanyHubService.DTOs
 
         public List<string> TechnologiesUsed { get; set; } // List for easier input
 
-        public string Industry { get; set; }
-
         public string ClientType { get; set; }
 
-        public string Impact { get; set; }
+        public List<Service> Services { get; set; }
+
     }
 }

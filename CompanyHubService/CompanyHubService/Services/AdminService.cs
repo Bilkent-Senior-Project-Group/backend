@@ -82,9 +82,7 @@ namespace CompanyHubService.Services
                 {
                     CompanyId = Guid.NewGuid(),
                     CompanyName = companyDto.Name,
-                    Specialties = companyDto.Specialties,
-                    Industries = string.Join(", ", companyDto.Industries ?? new List<string>()), // Convert list to string
-                    CoreExpertise = string.Join(", ", companyDto.CoreExpertise ?? new List<string>()),
+                    //services eklenecek
                     Location = companyDto.Location,
                     Website = companyDto.Website,
                     CompanySize = companyDto.CompanySize,
@@ -114,14 +112,13 @@ namespace CompanyHubService.Services
                             ProjectName = projectDto.ProjectName,
                             Description = projectDto.Description,
                             TechnologiesUsed = string.Join(", ", projectDto.TechnologiesUsed),
-                            Industry = projectDto.Industry,
                             ClientType = projectDto.ClientType,
-                            Impact = projectDto.Impact,
                             StartDate = projectDto.StartDate,
                             CompletionDate = projectDto.CompletionDate,
                             IsOnCompedia = false,
                             IsCompleted = projectDto.IsCompleted,
-                            ProjectUrl = projectDto.ProjectUrl
+                            ProjectUrl = projectDto.ProjectUrl,
+                            //services eklenecek
                         };
 
                         _dbContext.Projects.Add(project);
@@ -173,9 +170,6 @@ namespace CompanyHubService.Services
                     {
                         CompanyId = companyId,
                         CompanyName = companyDto.Name,
-                        Specialties = companyDto.Specialties,
-                        Industries = string.Join(", ", companyDto.Industries ?? new List<string>()),
-                        CoreExpertise = string.Join(", ", companyDto.CoreExpertise ?? new List<string>()),
                         Location = companyDto.Location,
                         Website = companyDto.Website,
                         CompanySize = companyDto.CompanySize,
@@ -183,8 +177,10 @@ namespace CompanyHubService.Services
                         Phone = companyDto.Phone,
                         Email = companyDto.Email,
                         Address = companyDto.Address,
-                        Verified = companyDto.Verified == 0
+                        Verified = companyDto.Verified == 0,
                     };
+
+                    _dbContext.ServiceCompanies.AddRange(companyDto.Services);
 
                     companiesToInsert.Add(company);
 
@@ -198,12 +194,23 @@ namespace CompanyHubService.Services
                                 ProjectName = projectDto.ProjectName,
                                 Description = projectDto.Description,
                                 TechnologiesUsed = string.Join(", ", projectDto.TechnologiesUsed ?? new List<string>()),
-                                Industry = projectDto.Industry,
                                 ClientType = projectDto.ClientType,
-                                Impact = projectDto.Impact,
                                 StartDate = projectDto.StartDate,
                                 ProjectUrl = projectDto.ProjectUrl
                             };
+
+                            if (projectDto.Services != null && projectDto.Services.Any())
+                            {
+                                var projectServiceMappings = projectDto.Services.Select(serviceId => new ServiceProject
+                                {
+                                    ProjectId = project.ProjectId,
+                                    ServiceId = serviceId.Id
+                                }).ToList();
+
+                                projectServiceMappings.AddRange(projectServiceMappings);
+
+                                _dbContext.ServiceProjects.AddRange(projectServiceMappings);
+                            }
 
                             projectsToInsert.Add(project);
                         }
@@ -242,9 +249,7 @@ namespace CompanyHubService.Services
                 {
                     id = company.CompanyId,
                     name = company.CompanyName,
-                    specialties = company.Specialties,
-                    core_expertise = company.CoreExpertise,
-                    industries = company.Industries,
+                    //services eklenecek
                     location = company.Location,
                     technologies_used = projectsToInsert
                     .Where(p => projectCompaniesToInsert

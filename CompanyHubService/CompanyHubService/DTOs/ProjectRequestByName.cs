@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using CompanyHubService.Validation;
+using CompanyHubService.Models;
 
 namespace CompanyHubService.DTOs
 {
@@ -16,9 +17,9 @@ namespace CompanyHubService.DTOs
 
         public string Description { get; set; }
         public List<string> TechnologiesUsed { get; set; }
-        public string Industry { get; set; }
         public string ClientType { get; set; }
-        public string Impact { get; set; }
+
+        public List<Service> Services { get; set; }
     }
 }
 
