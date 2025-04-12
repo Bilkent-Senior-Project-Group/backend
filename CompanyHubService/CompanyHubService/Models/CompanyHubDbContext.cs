@@ -130,9 +130,10 @@ namespace CompanyHubService.Data
 
             // Configure relationships if needed
             modelBuilder.Entity<Review>()
-                .HasOne(r => r.Company)
-                .WithMany(c => c.Reviews)
-                .HasForeignKey(r => r.CompanyId);
+                .HasOne(r => r.Project)
+                .WithMany()
+                .HasForeignKey(r => r.ProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Review>()
                 .HasOne(r => r.User)
