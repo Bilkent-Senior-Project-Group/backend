@@ -17,9 +17,6 @@ namespace CompanyHubService.DTOs
 
         [Required]
         public string Address { get; set; } // Address is required
-
-        public string Specialties { get; set; }
-        public string Industries { get; set; }
         public string Location { get; set; }
         public string Website { get; set; }
         public string CompanySize { get; set; }
@@ -27,7 +24,9 @@ namespace CompanyHubService.DTOs
         public string Phone { get; set; }
 
         public string Email { get; set; }
-        public string CoreExpertise { get; set; }
+
+        public List<Guid> Services { get; set; }
+        public List<string> Partnerships { get; set; } = new List<string>(); // Not required
 
         [Required]
         [EnsureAtLeastOneProject]

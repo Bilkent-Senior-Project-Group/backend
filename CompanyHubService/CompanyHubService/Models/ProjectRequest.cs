@@ -22,8 +22,6 @@ namespace CompanyHubService.Data
 
         public string TechnologiesUsed { get; set; }
 
-        public string Industry { get; set; }
-
         public string ClientType { get; set; }
 
         public string Impact { get; set; }
@@ -35,6 +33,8 @@ namespace CompanyHubService.Data
         public DateTime RequestDate { get; set; } = DateTime.UtcNow;
 
         public DateTime? AcceptedDate { get; set; }
+
+        public List<Service> Services { get; set; }
 
         [ForeignKey("ClientCompanyId")]
         public Company ClientCompany { get; set; }

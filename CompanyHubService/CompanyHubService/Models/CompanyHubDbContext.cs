@@ -35,8 +35,10 @@ namespace CompanyHubService.Data
 
         public DbSet<Review> Reviews { get; set; }
 
-
-
+        public DbSet<Service> Services { get; set; }
+        public DbSet<Industry> Industries { get; set; }
+        public DbSet<ServiceCompany> ServiceCompanies { get; set; }
+        public DbSet<ServiceProject> ServiceProjects { get; set; }
 
         // Configuring relationships and table properties
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -60,10 +62,10 @@ namespace CompanyHubService.Data
                 .HasForeignKey(uc => uc.CompanyId);
 
             modelBuilder.Entity<UserClaim>()
-            .HasOne(uc => uc.Company)
-            .WithMany()
-            .HasForeignKey(uc => uc.CompanyId)
-            .OnDelete(DeleteBehavior.Cascade);
+                .HasOne(uc => uc.Company)
+                .WithMany()
+                .HasForeignKey(uc => uc.CompanyId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             // Product configuration
             modelBuilder.Entity<Product>()
@@ -114,17 +116,17 @@ namespace CompanyHubService.Data
                 .OnDelete(DeleteBehavior.SetNull);
 
             modelBuilder.Entity<ProjectRequest>()
-            .HasOne(pr => pr.ClientCompany)
-            .WithMany()
-            .HasForeignKey(pr => pr.ClientCompanyId)
-            .OnDelete(DeleteBehavior.Restrict);
+                .HasOne(pr => pr.ClientCompany)
+                .WithMany()
+                .HasForeignKey(pr => pr.ClientCompanyId)
+                .OnDelete(DeleteBehavior.Restrict);
 
 
             modelBuilder.Entity<ProjectRequest>()
-            .HasOne(pr => pr.ProviderCompany)
-            .WithMany()
-            .HasForeignKey(pr => pr.ProviderCompanyId)
-            .OnDelete(DeleteBehavior.SetNull);
+                .HasOne(pr => pr.ProviderCompany)
+                .WithMany()
+                .HasForeignKey(pr => pr.ProviderCompanyId)
+                .OnDelete(DeleteBehavior.SetNull);
 
             // Configure relationships if needed
             modelBuilder.Entity<Review>()
@@ -136,6 +138,51 @@ namespace CompanyHubService.Data
                 .HasOne(r => r.User)
                 .WithMany(u => u.Reviews)
                 .HasForeignKey(r => r.UserId);
+
+            // Industry configuration
+            modelBuilder.Entity<Industry>()
+                .HasKey(i => i.Id);
+
+            // Service configuration
+            modelBuilder.Entity<Service>()
+                .HasKey(s => s.Id);
+
+            modelBuilder.Entity<Service>()
+                .HasOne(s => s.Industry)
+                .WithMany()
+                .HasForeignKey(s => s.IndustryId);
+
+            // ServiceCompany configuration
+            modelBuilder.Entity<ServiceCompany>()
+                .HasKey(sc => sc.Id);
+
+            modelBuilder.Entity<ServiceCompany>()
+                .HasOne(sc => sc.Company)
+                .WithMany()
+                .HasForeignKey(sc => sc.CompanyId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ServiceCompany>()
+                .HasOne(sc => sc.Service)
+                .WithMany()
+                .HasForeignKey(sc => sc.ServiceId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // ServiceProject configuration
+            modelBuilder.Entity<ServiceProject>()
+                .HasKey(sp => sp.Id);
+
+            modelBuilder.Entity<ServiceProject>()
+                .HasOne(sp => sp.Project)
+                .WithMany()
+                .HasForeignKey(sp => sp.ProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ServiceProject>()
+                .HasOne(sp => sp.Service)
+                .WithMany()
+                .HasForeignKey(sp => sp.ServiceId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

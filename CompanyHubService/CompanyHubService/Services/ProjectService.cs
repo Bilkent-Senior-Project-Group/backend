@@ -28,12 +28,19 @@ namespace CompanyHubService.Services
             var project = await dbContext.Projects
                 .Where(p => p.ProjectId == projectId)
                 .Include(p => p.ProjectCompany)
-                .ThenInclude(pc => pc.ClientCompany)
+                    .ThenInclude(pc => pc.ClientCompany)
                 .Include(p => p.ProjectCompany)
-                .ThenInclude(pc => pc.ProviderCompany)
+                    .ThenInclude(pc => pc.ProviderCompany)
+                .Include(p => p.ServiceProjects) // Include ServiceProject relationships
+                    .ThenInclude(sp => sp.Service) // Include the related services
                 .FirstOrDefaultAsync();
 
             if (project == null) return null;
+
+            // Extract the services related to this project from the ServiceProjects collection
+            var services = project.ServiceProjects
+                .Select(sp => sp.Service) // Access the Service navigation property
+                .ToList();
 
             return new ProjectDTO
             {
@@ -41,18 +48,18 @@ namespace CompanyHubService.Services
                 ProjectName = project.ProjectName,
                 Description = project.Description,
                 TechnologiesUsed = project.TechnologiesUsed?.Split(", ").ToList() ?? new List<string>(),
-                Industry = project.Industry,
                 ClientType = project.ClientType,
-                Impact = project.Impact,
                 StartDate = project.StartDate,
                 CompletionDate = project.CompletionDate,
                 IsOnCompedia = project.IsOnCompedia,
                 IsCompleted = project.IsCompleted,
                 ProjectUrl = project.ProjectUrl,
                 ClientCompanyName = project.ProjectCompany.ClientCompany.CompanyName,
-                ProviderCompanyName = project.ProjectCompany.ProviderCompany.CompanyName
+                ProviderCompanyName = project.ProjectCompany.ProviderCompany.CompanyName,
+                Services = services // Assign the list of services to the DTO
             };
         }
+
 
         public async Task<string> CreateProjectRequestAsync(ProjectRequestDTO request)
         {
@@ -75,9 +82,7 @@ namespace CompanyHubService.Services
                 ProjectName = request.ProjectName,
                 Description = request.Description,
                 TechnologiesUsed = request.TechnologiesUsed != null ? string.Join(", ", request.TechnologiesUsed) : "",
-                Industry = request.Industry,
                 ClientType = request.ClientType,
-                Impact = request.Impact
             };
 
             dbContext.ProjectRequests.Add(projectRequest);
@@ -131,13 +136,31 @@ namespace CompanyHubService.Services
                 ProjectName = projectRequest.ProjectName,
                 Description = projectRequest.Description,
                 TechnologiesUsed = projectRequest.TechnologiesUsed,
-                Industry = projectRequest.Industry,
                 ClientType = projectRequest.ClientType,
-                Impact = projectRequest.Impact,
                 StartDate = DateTime.UtcNow,
                 IsOnCompedia = true,
-                ProjectUrl = "https://default.url"
+                ProjectUrl = "https://default.url",
             };
+
+            var projectServices = new List<ServiceProject> { }; // List to hold project-service mappings
+
+            // Add Project-Service mappings
+            if (projectRequest.Services != null && projectRequest.Services.Any())
+            {
+                var projectServiceMappings = projectRequest.Services.Select(service => new ServiceProject
+                {
+                    ProjectId = newProject.ProjectId,
+                    ServiceId = service.Id,
+                }).ToList();
+
+                projectServices.AddRange(projectServiceMappings);
+            }
+
+            // Add the project-service mappings to the DbContext in a single operation
+            if (projectServices.Any())
+            {
+                dbContext.ServiceProjects.AddRange(projectServices);
+            }
 
             var projectCompany = new ProjectCompany
             {

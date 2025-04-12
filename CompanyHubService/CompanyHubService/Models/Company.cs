@@ -17,12 +17,9 @@ namespace CompanyHubService.Models
         public int FoundedYear { get; set; }
         public string CompanySize { get; set; }
         public string Address { get; set; }
-        public string Specialties { get; set; }
-        public string Industries { get; set; }
-        //public DateTime SignupDate { get; set; }
-        public string CoreExpertise { get; set; } // comma-separated string
 
-        public string Location { get; set; }
+        //public DateTime SignupDate { get; set; }
+        public int Location { get; set; }
         public string Website { get; set; }
         public bool Verified { get; set; }
 
@@ -33,6 +30,8 @@ namespace CompanyHubService.Models
         public double OverallRating { get; set; } = 0;
 
         public string LogoUrl { get; set; }
+
+        public ICollection<ServiceCompany> ServiceCompanies { get; set; } = new List<ServiceCompany>();
         public List<Project> Projects { get; set; } = new List<Project>();
         // Navigation property for Products
         public ICollection<Product> Products { get; set; } // One-to-Many relationship

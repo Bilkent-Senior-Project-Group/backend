@@ -73,9 +73,8 @@ public class ProjectController : ControllerBase
             ProjectName = request.ProjectName,
             Description = request.Description,
             TechnologiesUsed = request.TechnologiesUsed,
-            Industry = request.Industry,
             ClientType = request.ClientType,
-            Impact = request.Impact
+            Services = request.Services
         };
 
         var result = await projectService.CreateProjectRequestAsync(converted);
@@ -123,9 +122,8 @@ public class ProjectController : ControllerBase
             ProjectName = projectRequest.ProjectName,
             Description = projectRequest.Description,
             TechnologiesUsed = projectRequest.TechnologiesUsed?.Split(", ").ToList() ?? new List<string>(),
-            Industry = projectRequest.Industry,
             ClientType = projectRequest.ClientType,
-            Impact = projectRequest.Impact
+            Services = projectRequest.Services,
         };
 
         return Ok(projectRequestDTO);

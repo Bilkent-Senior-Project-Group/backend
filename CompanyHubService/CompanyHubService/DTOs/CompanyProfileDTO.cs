@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CompanyHubService.Models;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization; // Required for JSON mapping
@@ -15,13 +16,6 @@ namespace CompanyHubService.DTOs
         public string Description { get; set; }
 
         // [Required]
-        public string Specialties { get; set; }
-
-        // [Required]
-        // [JsonPropertyName("core_expertise")]  // Explicitly map JSON field
-        public List<string> CoreExpertise { get; set; } = new List<string>();
-
-        // [Required]
         public int Verified { get; set; }
 
         // [Required]
@@ -29,10 +23,7 @@ namespace CompanyHubService.DTOs
         public List<ProjectDTO> Projects { get; set; } = new List<ProjectDTO>();
 
         // [Required]
-        public List<string> Industries { get; set; } = new List<string>();
-
-        // [Required]
-        public string Location { get; set; }
+        public int Location { get; set; }
 
         // [Required]
         public string Website { get; set; }
@@ -55,5 +46,7 @@ namespace CompanyHubService.DTOs
 
         // [Required]
         public string Address { get; set; } = "Unknown"; // Default to "Unknown"
+
+        public List<ServiceCompany> Services { get; set; }
     }
 }

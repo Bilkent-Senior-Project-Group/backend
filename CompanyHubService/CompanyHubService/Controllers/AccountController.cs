@@ -88,6 +88,7 @@ public class AccountController : ControllerBase
         var userDTO = new UserDTO();
         if (user.Id != "9f4d21df-e8ab-473a-889d-d2eeaee28b32")
         {
+
             var companies = await _dbContext.UserCompanies
                 .Where(uc => uc.UserId == user.Id)
                 .Include(uc => uc.Company)
@@ -104,16 +105,15 @@ public class AccountController : ControllerBase
                             ProjectName = pc.Project.ProjectName,
                             Description = pc.Project.Description,
                             TechnologiesUsed = pc.Project.TechnologiesUsed.Split(new[] { ", " }, StringSplitOptions.None).ToList(),
-                            Industry = pc.Project.Industry,
                             ClientType = pc.Project.ClientType,
-                            Impact = pc.Project.Impact,
                             StartDate = pc.Project.StartDate,
                             CompletionDate = pc.Project.CompletionDate,
                             IsOnCompedia = pc.Project.IsOnCompedia,
                             IsCompleted = pc.Project.IsCompleted,
                             ProjectUrl = pc.Project.ProjectUrl,
                             ClientCompanyName = pc.ClientCompany.CompanyName,
-                            ProviderCompanyName = pc.ProviderCompany.CompanyName
+                            ProviderCompanyName = pc.ProviderCompany.CompanyName,
+                            //services eklenecek
                         }).ToList()
                 })
                 .ToListAsync();
