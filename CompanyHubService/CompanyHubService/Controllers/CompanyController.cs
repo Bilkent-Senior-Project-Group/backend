@@ -132,24 +132,34 @@ namespace CompanyHubService.Controllers
             }
 
             var projects = await dbContext.ProjectCompanies
-                .Where(pc => pc.ClientCompanyId == company.CompanyId || pc.ProviderCompanyId == company.CompanyId)
-                .Select(pc => new ProjectDTO
+            .Where(pc => pc.ClientCompanyId == company.CompanyId || pc.ProviderCompanyId == company.CompanyId)
+            .Include(pc => pc.Project)
+                .ThenInclude(p => p.ServiceProjects)
+                    .ThenInclude(sp => sp.Service)
+            .Include(pc => pc.ClientCompany)
+            .Include(pc => pc.ProviderCompany)
+            .Select(pc => new ProjectViewDTO
+            {
+                ProjectId = pc.Project.ProjectId,
+                ProjectName = pc.Project.ProjectName,
+                Description = pc.Project.Description,
+                TechnologiesUsed = pc.Project.TechnologiesUsed.Split(new[] { ", " }, StringSplitOptions.None).ToList(),
+                ClientType = pc.Project.ClientType,
+                StartDate = pc.Project.StartDate,
+                CompletionDate = pc.Project.CompletionDate,
+                IsOnCompedia = pc.Project.IsOnCompedia,
+                IsCompleted = pc.Project.IsCompleted,
+                ProjectUrl = pc.Project.ProjectUrl,
+                ClientCompanyName = pc.ClientCompany.CompanyName,
+                ProviderCompanyName = pc.ProviderCompany.CompanyName,
+                Services = pc.Project.ServiceProjects.Select(sp => new ServiceDTO
                 {
-                    ProjectId = pc.Project.ProjectId,
-                    ProjectName = pc.Project.ProjectName,
-                    Description = pc.Project.Description,
-                    TechnologiesUsed = pc.Project.TechnologiesUsed.Split(new[] { ", " }, StringSplitOptions.None).ToList(),
-                    ClientType = pc.Project.ClientType,
-                    StartDate = pc.Project.StartDate,
-                    CompletionDate = pc.Project.CompletionDate,
-                    IsOnCompedia = pc.Project.IsOnCompedia,
-                    IsCompleted = pc.Project.IsCompleted,
-                    ProjectUrl = pc.Project.ProjectUrl,
-                    ClientCompanyName = pc.ClientCompany.CompanyName,
-                    ProviderCompanyName = pc.ProviderCompany.CompanyName,
-                    //Services eklenecek
-                })
-                .ToListAsync();
+                    Id = sp.Service.Id,
+                    Name = sp.Service.Name
+                }).ToList()
+            })
+            .ToListAsync();
+
 
             var services = await dbContext.ServiceCompanies
                 .Where(sc => sc.CompanyId == company.CompanyId).ToListAsync();

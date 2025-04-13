@@ -17,7 +17,7 @@ namespace CompanyHubService.DTOs
 
         [Required]
         public string Address { get; set; } // Address is required
-        public string Location { get; set; }
+        public int Location { get; set; }
         public string Website { get; set; }
         public string CompanySize { get; set; }
 
@@ -28,8 +28,6 @@ namespace CompanyHubService.DTOs
         public List<Guid> Services { get; set; }
         public List<string> Partnerships { get; set; } = new List<string>(); // Not required
 
-        [Required]
-        [EnsureAtLeastOneProject]
         public List<ProjectDTO>? Portfolio { get; set; } // List of projects
 
     }

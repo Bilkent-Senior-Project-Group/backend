@@ -20,7 +20,7 @@ namespace CompanyHubService.DTOs
 
         // [Required]
         // [JsonPropertyName("portfolio")]  // Map JSON "portfolio" to "Projects"
-        public List<ProjectDTO> Projects { get; set; } = new List<ProjectDTO>();
+        public List<ProjectViewDTO> Projects { get; set; } = new List<ProjectViewDTO>();
 
         // [Required]
         public int Location { get; set; }
