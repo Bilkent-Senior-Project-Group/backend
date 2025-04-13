@@ -12,15 +12,16 @@ namespace CompanyHubService.Services
     {
         private CompanyHubDbContext dbContext { get; set; }
         private UserService userService { get; set; }
-
         private NotificationService notificationService { get; set; }
+        private readonly IProducer<string, string> _kafkaProducer;
 
 
-        public ProjectService(CompanyHubDbContext dbContext, UserService userService, NotificationService notificationService)
+        public ProjectService(CompanyHubDbContext dbContext, UserService userService, NotificationService notificationService, IProducer<string, string> kafkaProducer)
         {
             this.dbContext = dbContext;
             this.userService = userService;
             this.notificationService = notificationService;
+            this._kafkaProducer = kafkaProducer;
         }
 
         public async Task<ProjectDTO?> GetProjectAsync(Guid projectId)
@@ -172,6 +173,54 @@ namespace CompanyHubService.Services
             dbContext.Projects.Add(newProject);
             dbContext.ProjectCompanies.Add(projectCompany);
             await dbContext.SaveChangesAsync();
+
+            // Send Kafka message for provider company update
+            try
+            {
+                // Retrieve the provider company with related entities
+                var providerCompany = await dbContext.Companies
+                    .Include(c => c.ServiceCompanies)
+                    .Include(c => c.Projects)
+                    .Include(c => c.Products)
+                    .Include(c => c.Reviews)
+                    .FirstOrDefaultAsync(c => c.CompanyId == projectRequest.ProviderCompanyId);
+
+                if (providerCompany != null)
+                {
+                    // Create the DTO with only the fields we want to send
+                    var companyKafkaDTO = new CompanyKafkaDTO
+                    {
+                        CompanyId = providerCompany.CompanyId,
+                        Description = providerCompany.Description,
+                        FoundedYear = providerCompany.FoundedYear,
+                        CompanySize = providerCompany.CompanySize,
+                        Location = providerCompany.Location,
+                        OverallRating = providerCompany.OverallRating,
+                        ServiceCompanies = providerCompany.ServiceCompanies,
+                        Projects = providerCompany.Projects,
+                        Products = providerCompany.Products,
+                        Reviews = providerCompany.Reviews
+                    };
+
+                    // Serialize the DTO to JSON
+                    var messageValue = System.Text.Json.JsonSerializer.Serialize(companyKafkaDTO);
+
+                    // Create the Kafka message
+                    var message = new Message<string, string>
+                    {
+                        Key = providerCompany.CompanyId.ToString(),
+                        Value = messageValue
+                    };
+
+                    var result = await _kafkaProducer.ProduceAsync("modifyCompany", message);
+                    Console.WriteLine($"Sent company update to Kafka topic {result.TopicPartitionOffset}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error producing Kafka message: {ex.Message}");
+                // Continue execution as the main operation was successful
+            }
 
             return "Project request approved and project created successfully.";
         }

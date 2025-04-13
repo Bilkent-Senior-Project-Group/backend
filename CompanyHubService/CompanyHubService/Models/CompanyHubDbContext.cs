@@ -175,13 +175,13 @@ namespace CompanyHubService.Data
 
             modelBuilder.Entity<ServiceProject>()
                 .HasOne(sp => sp.Project)
-                .WithMany()
+                .WithMany(p => p.ServiceProjects)  // Specify the navigation property
                 .HasForeignKey(sp => sp.ProjectId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<ServiceProject>()
                 .HasOne(sp => sp.Service)
-                .WithMany()
+                .WithMany(s => s.ServiceProjects)
                 .HasForeignKey(sp => sp.ServiceId)
                 .OnDelete(DeleteBehavior.Cascade);
         }

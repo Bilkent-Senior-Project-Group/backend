@@ -9,5 +9,6 @@
 
         public Industry Industry { get; set; }
 
+        public ICollection<ServiceProject> ServiceProjects { get; set; }
     }
 }
