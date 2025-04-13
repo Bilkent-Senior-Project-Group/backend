@@ -28,7 +28,6 @@ namespace CompanyHubService.Services
             _httpClientFactory = httpClientFactory;
         }
 
-        //used when a new user creates a company.
         public async Task<bool> CreateCompanyAsync(CreateCompanyRequestDTO request, string userId)
         {
             var company = new Company
@@ -69,9 +68,10 @@ namespace CompanyHubService.Services
             };
             _dbContext.UserCompanies.Add(userCompany);
 
+            List<Project> projects = new List<Project>();
+
             if (request.Portfolio != null && request.Portfolio.Any())
             {
-                var projects = new List<Project>();
                 var projectCompanies = new List<ProjectCompany>();
                 var projectServices = new List<ServiceProject>(); // List to hold project-service mappings
 
@@ -136,6 +136,42 @@ namespace CompanyHubService.Services
             // Save all changes in a single transaction
             await _dbContext.SaveChangesAsync();
 
+            // Send Kafka message for company creation
+            try
+            {
+                var companyKafkaDTO = new CompanyKafkaDTO
+                {
+                    CompanyId = company.CompanyId,
+                    Description = company.Description,
+                    FoundedYear = company.FoundedYear,
+                    CompanySize = company.CompanySize,
+                    Location = company.Location,
+                    OverallRating = company.OverallRating,
+                    ServiceCompanies = serviceCompanies,
+                    Projects = projects,
+                    Products = new List<Product>(), // Empty as new company
+                    Reviews = new List<Review>() // Empty as new company
+                };
+
+                // Serialize the DTO to JSON
+                var messageValue = System.Text.Json.JsonSerializer.Serialize(companyKafkaDTO);
+
+                // Create the Kafka message
+                var message = new Message<string, string>
+                {
+                    Key = company.CompanyId.ToString(),
+                    Value = messageValue
+                };
+
+                var result = await _kafkaProducer.ProduceAsync("createCompany", message);
+                Console.WriteLine($"Sent message to Kafka topic {result.TopicPartitionOffset}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error producing Kafka message: {ex.Message}");
+                // Don't return false here as company was already created successfully
+            }
+
             return true;
         }
 
@@ -144,8 +180,37 @@ namespace CompanyHubService.Services
         {
             try
             {
+                // Retrieve the company with related entities from the database
+                var company = await _dbContext.Companies
+                    .Include(c => c.ServiceCompanies)
+                    .Include(c => c.Projects)
+                    .Include(c => c.Products)
+                    .Include(c => c.Reviews)
+                    .FirstOrDefaultAsync(c => c.CompanyId == companyProfileDTO.CompanyId);
+
+                if (company == null)
+                {
+                    Console.WriteLine($"Company with ID {companyProfileDTO.CompanyId} not found");
+                    return false;
+                }
+
+                // Create the DTO with only the fields we want to send
+                var companyKafkaDTO = new CompanyKafkaDTO
+                {
+                    CompanyId = company.CompanyId,
+                    Description = company.Description,
+                    FoundedYear = company.FoundedYear,
+                    CompanySize = company.CompanySize,
+                    Location = company.Location,
+                    OverallRating = company.OverallRating,
+                    ServiceCompanies = company.ServiceCompanies,
+                    Projects = company.Projects,
+                    Products = company.Products,
+                    Reviews = company.Reviews
+                };
+
                 // Serialize the DTO to JSON
-                var messageValue = System.Text.Json.JsonSerializer.Serialize(companyProfileDTO);
+                var messageValue = System.Text.Json.JsonSerializer.Serialize(companyKafkaDTO);
 
                 // Create the Kafka message
                 var message = new Message<string, string>
@@ -154,7 +219,7 @@ namespace CompanyHubService.Services
                     Value = messageValue                          // JSON payload as the value
                 };
 
-                var result = await _kafkaProducer.ProduceAsync("modifyCompanySpecialty", message);
+                var result = await _kafkaProducer.ProduceAsync("modifyCompany", message);
                 Console.WriteLine($"Sent message to Kafka topic {result.TopicPartitionOffset}");
             }
             catch (Exception ex)
