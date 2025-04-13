@@ -42,6 +42,8 @@ namespace CompanyHubService.Services
                 Verified = false,
                 Phone = request.Phone,
                 Email = request.Email,
+                LogoUrl = "https://default.logo.url/logo.png"
+
             };
 
             // Create ServiceCompany mappings
@@ -115,7 +117,7 @@ namespace CompanyHubService.Services
                         var projectServiceMappings = p.Services.Select(serviceId => new ServiceProject
                         {
                             ProjectId = newProject.ProjectId,
-                            ServiceId = serviceId.Id
+                            ServiceId = serviceId
                         }).ToList();
 
                         projectServices.AddRange(projectServiceMappings);

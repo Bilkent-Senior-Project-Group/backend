@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
 using Confluent.Kafka;
 using System.Text.Json;
+using Microsoft.VisualBasic;
 
 namespace CompanyHubService.Services
 {
@@ -24,7 +25,7 @@ namespace CompanyHubService.Services
             this._kafkaProducer = kafkaProducer;
         }
 
-        public async Task<ProjectDTO?> GetProjectAsync(Guid projectId)
+        public async Task<ProjectViewDTO?> GetProjectAsync(Guid projectId)
         {
             var project = await dbContext.Projects
                 .Where(p => p.ProjectId == projectId)
@@ -43,7 +44,7 @@ namespace CompanyHubService.Services
                 .Select(sp => sp.Service) // Access the Service navigation property
                 .ToList();
 
-            return new ProjectDTO
+            return new ProjectViewDTO
             {
                 ProjectId = project.ProjectId,
                 ProjectName = project.ProjectName,
@@ -57,7 +58,12 @@ namespace CompanyHubService.Services
                 ProjectUrl = project.ProjectUrl,
                 ClientCompanyName = project.ProjectCompany.ClientCompany.CompanyName,
                 ProviderCompanyName = project.ProjectCompany.ProviderCompany.CompanyName,
-                Services = services // Assign the list of services to the DTO
+                Services = services.Select(s => new ServiceDTO
+                {
+                    Id = s.Id,
+                    Name = s.Name,
+                    
+                }).ToList()
             };
         }
 

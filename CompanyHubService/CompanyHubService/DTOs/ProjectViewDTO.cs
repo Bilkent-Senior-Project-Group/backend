@@ -1,9 +1,8 @@
-using System.Text.Json.Serialization;
 using CompanyHubService.Models;
 
 namespace CompanyHubService.DTOs
 {
-    public class ProjectDTO
+    public class ProjectViewDTO
     {
         public Guid ProjectId { get; set; }
 
@@ -30,7 +29,6 @@ namespace CompanyHubService.DTOs
         //[JsonPropertyName("project_url")]  // Explicitly map JSON field
         public string ProjectUrl { get; set; }
 
-        public List<Guid> Services { get; set; }
-
+        public List<ServiceDTO> Services { get; set; } // Change this to ServiceDTO
     }
 }
