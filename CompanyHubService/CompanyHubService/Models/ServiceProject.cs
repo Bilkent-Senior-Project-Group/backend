@@ -20,7 +20,6 @@ namespace CompanyHubService.Models
         public Project Project { get; set; }
 
         [ForeignKey("ServiceId")]
-
         public Service Service { get; set; }
     }
 }

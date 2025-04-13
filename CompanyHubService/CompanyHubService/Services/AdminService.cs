@@ -61,7 +61,7 @@ namespace CompanyHubService.Services
             return company;
         }
 
-        public async Task<bool> AddCompanyAsync(CompanyProfileDTO companyDto)
+        public async Task<bool> AddCompanyAsync(CreateCompanyRequestDTO companyDto)
         {
             using var transaction = await _dbContext.Database.BeginTransactionAsync();
             try
@@ -75,36 +75,52 @@ namespace CompanyHubService.Services
                     return false;
                 }
 
-                Console.WriteLine($"Processing Company: {companyDto.Name}");
+                Console.WriteLine($"Processing Company: {companyDto.CompanyName}");
 
                 // Create new company entity
                 var company = new Company
                 {
                     CompanyId = Guid.NewGuid(),
-                    CompanyName = companyDto.Name,
-                    //services eklenecek
+                    CompanyName = companyDto.CompanyName,
+                    Description = companyDto.Description,
                     Location = companyDto.Location,
                     Website = companyDto.Website,
                     CompanySize = companyDto.CompanySize,
                     FoundedYear = companyDto.FoundedYear,
+                    LogoUrl = "https://default.logo.url/logo.png",
                     Phone = string.IsNullOrEmpty(companyDto.Phone) ? "Unknown" : companyDto.Phone, // ✅ Default value
                     Email = string.IsNullOrEmpty(companyDto.Email) ? "Unknown" : companyDto.Email, // ✅ Default value
-                    Verified = companyDto.Verified == 1, // Convert int to bool
-                    Address = string.IsNullOrEmpty(companyDto.Address) ? "Unknown" : companyDto.Address, // ✅ Default value
+                    Verified = true,
+                    Address = string.IsNullOrEmpty(companyDto.Address) ? "Unknown" : companyDto.Address, // ✅ Default value 
                 };
+
+                // Create ServiceCompany mappings
+                var serviceCompanies = companyDto.Services.Select(item => new ServiceCompany
+                {
+                    CompanyId = company.CompanyId,
+                    ServiceId = item,
+                }).ToList();
 
                 _dbContext.Companies.Add(company);
                 await _dbContext.SaveChangesAsync();
 
                 Console.WriteLine($"Successfully added company: {company.CompanyName}");
 
+                
+
+                // Add the project-service mappings to the DbContext in a single operation
+                if (serviceCompanies.Any())
+                {
+                    _dbContext.ServiceCompanies.AddRange(serviceCompanies);
+                }
+
                 // Add projects (portfolio) to Projects table
 
 
-                if (companyDto.Projects != null && companyDto.Projects.Any())
+                /*if (companyDto.Portfolio != null && companyDto.Portfolio.Any())
                 {
                     Console.WriteLine("📌 Adding Projects...");
-                    foreach (var projectDto in companyDto.Projects)
+                    foreach (var projectDto in companyDto.Portfolio)
                     {
                         var project = new Project
                         {
@@ -123,6 +139,92 @@ namespace CompanyHubService.Services
 
                         _dbContext.Projects.Add(project);
                         Console.WriteLine($"Added project: {project.ProjectName}");
+                    }
+                }*/
+
+                List<Project> projects = new List<Project>();
+
+                if (companyDto.Portfolio != null && companyDto.Portfolio.Any())
+                {
+                    var projectCompanies = new List<ProjectCompany>();
+                    var projectServices = new List<ServiceProject>(); // List to hold project-service mappings
+
+                    foreach (var p in companyDto.Portfolio)
+                    {
+                        var clientCompany = await _dbContext.Companies
+                            .FirstOrDefaultAsync(c => c.CompanyName == p.ClientCompanyName);
+
+                        var providerCompany = await _dbContext.Companies
+                            .FirstOrDefaultAsync(c => c.CompanyName == p.ProviderCompanyName);
+
+
+                        // If either client or provider company is not found, equalize client to provider
+                        var flag = 0;
+                        var IsClient = 2; // 0: provider, 1: client, 2: both found
+
+                        if (clientCompany == null && providerCompany != null)
+                        {
+                            clientCompany = providerCompany;
+                            flag = 1;
+                            IsClient = 0;
+    
+                        }
+                        else if (providerCompany == null && clientCompany != null)
+                        {
+                            providerCompany = clientCompany;
+                            flag = 2;
+                            IsClient = 1;
+                        }
+
+                        var newProject = new Project
+                        {
+                            ProjectId = Guid.NewGuid(),
+                            ProjectName = p.ProjectName,
+                            Description = p.Description,
+                            TechnologiesUsed = string.Join(", ", p.TechnologiesUsed),
+                            ClientType = p.ClientType,
+                            StartDate = p.StartDate,
+                            CompletionDate = p.CompletionDate,
+                            IsOnCompedia = false,
+                            IsCompleted = p.IsCompleted,
+                            ProjectUrl = p.ProjectUrl
+                        };
+
+                        projects.Add(newProject);
+
+                        // Create project-company mapping
+                        var newProjectCompany = new ProjectCompany
+                        {
+                            ProjectId = newProject.ProjectId,
+                            ClientCompanyId = flag == 0 ? clientCompany.CompanyId : flag == 1 ? providerCompany.CompanyId : clientCompany.CompanyId,
+                            ProviderCompanyId = flag == 0 ? providerCompany.CompanyId : flag == 1 ? clientCompany.CompanyId : providerCompany.CompanyId,
+                            OtherCompanyName = flag == 0 ? null : flag == 1 ? p.ClientCompanyName : p.ProviderCompanyName,
+                            IsClient = IsClient 
+                        };
+
+                        projectCompanies.Add(newProjectCompany);
+
+                        // Add Project-Service mappings
+                        if (p.Services != null && p.Services.Any())
+                        {
+                            var projectServiceMappings = p.Services.Select(serviceId => new ServiceProject
+                            {
+                                ProjectId = newProject.ProjectId,
+                                ServiceId = serviceId
+                            }).ToList();
+
+                            projectServices.AddRange(projectServiceMappings);
+                        }
+                    }
+
+                    // Add all projects, project-company mappings, and project-service mappings
+                    _dbContext.Projects.AddRange(projects);
+                    _dbContext.ProjectCompanies.AddRange(projectCompanies);
+
+                    // Add the project-service mappings to the DbContext in a single operation
+                    if (projectServices.Any())
+                    {
+                        _dbContext.ServiceProjects.AddRange(projectServices);
                     }
                 }
 
@@ -145,7 +247,7 @@ namespace CompanyHubService.Services
             }
         }
 
-        public async Task<bool> BulkAddCompaniesAsync(BulkCompanyInsertDTO bulkCompanies)
+        /*public async Task<bool> BulkAddCompaniesAsync(BulkCompanyInsertDTO bulkCompanies)
         {
             using var transaction = await _dbContext.Database.BeginTransactionAsync();
             try
@@ -169,7 +271,7 @@ namespace CompanyHubService.Services
                     var company = new Company
                     {
                         CompanyId = companyId,
-                        CompanyName = companyDto.Name,
+                        CompanyName = companyDto.CompanyName,
                         Location = companyDto.Location,
                         Website = companyDto.Website,
                         CompanySize = companyDto.CompanySize,
@@ -177,7 +279,7 @@ namespace CompanyHubService.Services
                         Phone = companyDto.Phone,
                         Email = companyDto.Email,
                         Address = companyDto.Address,
-                        Verified = companyDto.Verified == 0,
+                        Verified = true,
                     };
 
                     _dbContext.ServiceCompanies.AddRange(companyDto.Services);
@@ -290,7 +392,161 @@ namespace CompanyHubService.Services
                 Console.WriteLine($"Error during bulk insert: {ex.Message}");
                 return false;
             }
+        }*/
+
+        public async Task<bool> BulkAddCompaniesAsync(BulkCompanyInsertDTO bulkCompanies)
+        {
+            using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            try
+            {
+                if (bulkCompanies.Companies == null || !bulkCompanies.Companies.Any())
+                {
+                    Console.WriteLine("No companies found in the input JSON.");
+                    return false;
+                }
+
+                Console.WriteLine($"\ud83d\udccc Processing {bulkCompanies.Companies.Count} Companies...");
+
+                var companiesToInsert = new List<Company>();
+                var projectsToInsert = new List<Project>();
+                var projectCompaniesToInsert = new List<ProjectCompany>();
+                var serviceCompaniesToInsert = new List<ServiceCompany>();
+                var projectServicesToInsert = new List<ServiceProject>();
+
+                foreach (var companyDto in bulkCompanies.Companies)
+                {
+                    var companyId = Guid.NewGuid();
+
+                    var company = new Company
+                    {
+                        CompanyId = companyId,
+                        CompanyName = companyDto.CompanyName,
+                        Description = companyDto.Description,
+                        Location = companyDto.Location,
+                        Website = companyDto.Website,
+                        CompanySize = companyDto.CompanySize,
+                        FoundedYear = companyDto.FoundedYear,
+                        Phone = companyDto.Phone ?? "Unknown",
+                        Email = companyDto.Email ?? "Unknown",
+                        Address = companyDto.Address ?? "Unknown",
+                        Verified = true,
+                        LogoUrl = "https://default.logo.url/logo.png"
+                    };
+
+                    companiesToInsert.Add(company);
+
+                    // Add the company and service mappings to the DbContext
+                    _dbContext.Companies.Add(company);
+                    await _dbContext.SaveChangesAsync();
+
+                    if (companyDto.Services != null && companyDto.Services.Any())
+                    {
+                        serviceCompaniesToInsert.AddRange(companyDto.Services.Select(serviceId => new ServiceCompany
+                        {
+                            CompanyId = companyId,
+                            ServiceId = serviceId
+                        }));
+                    }
+                    
+                    if (companyDto.Portfolio != null && companyDto.Portfolio.Any())
+                    {
+                        foreach (var projectDto in companyDto.Portfolio)
+                        {
+                            var projectId = Guid.NewGuid();
+
+                            var project = new Project
+                            {
+                                ProjectId = projectId,
+                                ProjectName = projectDto.ProjectName,
+                                Description = projectDto.Description,
+                                TechnologiesUsed = string.Join(", ", projectDto.TechnologiesUsed ?? new List<string>()),
+                                ClientType = projectDto.ClientType,
+                                StartDate = projectDto.StartDate,
+                                CompletionDate = projectDto.CompletionDate,
+                                ProjectUrl = projectDto.ProjectUrl,
+                                IsCompleted = projectDto.IsCompleted,
+                                IsOnCompedia = false
+                            };
+
+                            projectsToInsert.Add(project);
+
+                            projectCompaniesToInsert.Add(new ProjectCompany
+                            {
+                                ProjectId = projectId,
+                                ClientCompanyId = companyId,
+                                ProviderCompanyId = companyId, // IT CAN NOT BE NULL, HERE IS THE ERROR
+                                IsClient = 1,
+                                OtherCompanyName = projectDto.ProviderCompanyName
+                            });
+
+                            if (projectDto.Services != null && projectDto.Services.Any())
+                            {
+                                projectServicesToInsert.AddRange(projectDto.Services.Select(service => new ServiceProject
+                                {
+                                    ProjectId = projectId,
+                                    ServiceId = service
+                                }));
+                            }
+                        }
+                    }
+                }
+
+                await _dbContext.ServiceCompanies.AddRangeAsync(serviceCompaniesToInsert);
+                await _dbContext.Projects.AddRangeAsync(projectsToInsert);
+                await _dbContext.ProjectCompanies.AddRangeAsync(projectCompaniesToInsert);
+                await _dbContext.ServiceProjects.AddRangeAsync(projectServicesToInsert);
+
+                await _dbContext.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                Console.WriteLine("All companies and projects added successfully.");
+
+                var mappedCompaniesForKafka = companiesToInsert.Select(company => new
+                {
+                    id = company.CompanyId,
+                    name = company.CompanyName,
+                    location = company.Location,
+                    //services eklenecek
+                    technologies_used = projectsToInsert
+                        .Where(p => projectCompaniesToInsert
+                            .Any(pc => pc.ProjectId == p.ProjectId && pc.ClientCompanyId == company.CompanyId))
+                        .Select(p => p.TechnologiesUsed)
+                        .Distinct()
+                        .ToList(),
+                    company_size = company.CompanySize,
+                    founded_year = company.FoundedYear
+                }).ToList();
+
+                try
+                {
+                    var messageValue = System.Text.Json.JsonSerializer.Serialize(mappedCompaniesForKafka);
+
+                    var message = new Message<string, string>
+                    {
+                        Key = DateTime.Now.ToString(),
+                        Value = messageValue
+                    };
+
+                    var result = await _kafkaProducer.ProduceAsync("addBulkCompanies", message);
+                    Console.WriteLine($"Sent message to Kafka topic {result.TopicPartitionOffset}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error producing Kafka message: {ex.Message}");
+                    return false;
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                Console.WriteLine($"Error during bulk insert: {ex.Message}");
+                return false;
+            }
         }
+
+
 
 
     }

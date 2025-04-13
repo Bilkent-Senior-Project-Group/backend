@@ -150,8 +150,8 @@ namespace CompanyHubService.Controllers
                 IsOnCompedia = pc.Project.IsOnCompedia,
                 IsCompleted = pc.Project.IsCompleted,
                 ProjectUrl = pc.Project.ProjectUrl,
-                ClientCompanyName = pc.ClientCompany.CompanyName,
-                ProviderCompanyName = pc.ProviderCompany.CompanyName,
+                ClientCompanyName = pc.IsClient == 0 ? pc.OtherCompanyName : pc.IsClient == 1 ? pc.ClientCompany.CompanyName : pc.ClientCompany.CompanyName,
+                ProviderCompanyName = pc.IsClient == 0 ? pc.ProviderCompany.CompanyName : pc.IsClient == 1 ? pc.OtherCompanyName : pc.ProviderCompany.CompanyName,
                 Services = pc.Project.ServiceProjects.Select(sp => new ServiceDTO
                 {
                     Id = sp.Service.Id,
@@ -237,7 +237,7 @@ namespace CompanyHubService.Controllers
 
         [HttpGet("GetCompaniesOfUser/{userId}")]
         [Authorize] // Only the user can see their companies (maybe Admin can see all companies) Maybe it can be changed later???
-        public async Task<IActionResult> GetCompaniesOfUser([FromBody] string userId)
+        public async Task<IActionResult> GetCompaniesOfUser(string userId)
         {
 
             if (string.IsNullOrEmpty(userId))

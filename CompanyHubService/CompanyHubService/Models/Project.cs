@@ -1,4 +1,6 @@
 using System;
+using System.ComponentModel.DataAnnotations.Schema;
+using CompanyHubService.Data;
 
 namespace CompanyHubService.Models
 {
@@ -16,6 +18,10 @@ namespace CompanyHubService.Models
         public bool ProviderMarkedCompleted { get; set; } = false;
         public bool IsCompleted { get; set; } = false;
         public string? ProjectUrl { get; set; }
+
+        [NotMapped]
+        public ProjectRequest ProjectRequest { get; set; }
+
 
         // Nav prop
         public ProjectCompany ProjectCompany { get; set; }

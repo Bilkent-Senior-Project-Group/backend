@@ -34,9 +34,9 @@ namespace CompanyHubService.Models
         public ICollection<ServiceCompany> ServiceCompanies { get; set; } = new List<ServiceCompany>();
         public List<Project> Projects { get; set; } = new List<Project>();
         // Navigation property for Products
-        public ICollection<Product> Products { get; set; } // One-to-Many relationship
+        public ICollection<Product> Products { get; set; } // One-to-Many relationship DO NOT NEED THAT
 
-        public ICollection<ProductClient> ClientProductClients { get; set; } // Products this company is a client of
-        public ICollection<Review> Reviews { get; set; } = new List<Review>();
+        public ICollection<ProductClient> ClientProductClients { get; set; } // Products this company is a client of DO NOT NEED THAT
+        public ICollection<Review> Reviews { get; set; } = new List<Review>(); // DO NOT NEED THAT
     }
 }

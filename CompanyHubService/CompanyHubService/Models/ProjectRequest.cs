@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using CompanyHubService.DTOs;
 using CompanyHubService.Models;
 
 namespace CompanyHubService.Data
@@ -34,7 +35,7 @@ namespace CompanyHubService.Data
 
         public DateTime? AcceptedDate { get; set; }
 
-        public List<Service> Services { get; set; }
+        public List<Guid> Services { get; set; } // SIKINTI BURADA --> CompanyHubDBContext.cs'de comma seperated string olarak tanımlandı.
 
         [ForeignKey("ClientCompanyId")]
         public Company ClientCompany { get; set; }
