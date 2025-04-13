@@ -62,7 +62,7 @@ namespace CompanyHubService.Controllers
 
         //This is the one where company is added from a given json file with muitple companies (only admin should be able to)
         [HttpPost("BulkAddCompanies")]
-        public async Task<IActionResult> BulkAddCompanies([FromBody] Dictionary<string, CompanyProfileDTO> jsonCompanies)
+        public async Task<IActionResult> BulkAddCompanies([FromBody] Dictionary<string, CreateCompanyRequestDTO> jsonCompanies)
         {
             if (jsonCompanies == null || jsonCompanies.Count == 0)
             {
@@ -90,7 +90,7 @@ namespace CompanyHubService.Controllers
 
         //This is the one where company is added from a given json file with one company (only admin should be able to)
         [HttpPost("AddCompany")]
-        public async Task<IActionResult> AddCompany([FromBody] CompanyProfileDTO companyDto)
+        public async Task<IActionResult> AddCompany([FromBody] CreateCompanyRequestDTO companyDto)
         {
             if (!ModelState.IsValid)
             {

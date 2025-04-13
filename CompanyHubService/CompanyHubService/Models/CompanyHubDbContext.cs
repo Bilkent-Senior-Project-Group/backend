@@ -128,6 +128,15 @@ namespace CompanyHubService.Data
                 .HasForeignKey(pr => pr.ProviderCompanyId)
                 .OnDelete(DeleteBehavior.SetNull);
 
+            modelBuilder.Entity<ProjectRequest>()
+            .Property(pr => pr.Services)
+            .HasConversion(
+                v => string.Join(",", v), // Save: List<Guid> → CSV string
+                v => string.IsNullOrEmpty(v)
+                    ? new List<Guid>()
+                    : v.Split(",", StringSplitOptions.RemoveEmptyEntries).Select(Guid.Parse).ToList()
+            );
+            
             // Configure relationships if needed
             modelBuilder.Entity<Review>()
                 .HasOne(r => r.Project)

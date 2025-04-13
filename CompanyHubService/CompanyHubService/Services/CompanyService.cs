@@ -56,6 +56,8 @@ namespace CompanyHubService.Services
             // Add the company and service mappings to the DbContext
             _dbContext.Companies.Add(company);
 
+            await _dbContext.SaveChangesAsync();
+
             // Add the project-service mappings to the DbContext in a single operation
             if (serviceCompanies.Any())
             {
@@ -85,6 +87,25 @@ namespace CompanyHubService.Services
                     var providerCompany = await _dbContext.Companies
                         .FirstOrDefaultAsync(c => c.CompanyName == p.ProviderCompanyName);
 
+
+                    // If either client or provider company is not found, equalize client to provider
+                    var flag = 0;
+                    var IsClient = 2; // 0: provider, 1: client, 2: both found
+
+                    if (clientCompany == null && providerCompany != null)
+                    {
+                        clientCompany = providerCompany;
+                        flag = 1;
+                        IsClient = 0;
+ 
+                    }
+                    else if (providerCompany == null && clientCompany != null)
+                    {
+                        providerCompany = clientCompany;
+                        flag = 2;
+                        IsClient = 1;
+                    }
+
                     var newProject = new Project
                     {
                         ProjectId = Guid.NewGuid(),
@@ -105,8 +126,10 @@ namespace CompanyHubService.Services
                     var newProjectCompany = new ProjectCompany
                     {
                         ProjectId = newProject.ProjectId,
-                        ClientCompanyId = clientCompany?.CompanyId, // Null if not found
-                        ProviderCompanyId = providerCompany?.CompanyId // Null if not found
+                        ClientCompanyId = flag == 0 ? clientCompany.CompanyId : flag == 1 ? providerCompany.CompanyId : clientCompany.CompanyId,
+                        ProviderCompanyId = flag == 0 ? providerCompany.CompanyId : flag == 1 ? clientCompany.CompanyId : providerCompany.CompanyId,
+                        OtherCompanyName = flag == 0 ? null : flag == 1 ? p.ClientCompanyName : p.ProviderCompanyName,
+                        IsClient = IsClient 
                     };
 
                     projectCompanies.Add(newProjectCompany);
@@ -266,152 +289,6 @@ namespace CompanyHubService.Services
             return companies;
         }
 
-        public async Task<bool> BulkAddCompaniesAsync(BulkCompanyInsertDTO bulkCompanies)
-        {
-            using var transaction = await _dbContext.Database.BeginTransactionAsync();
-            try
-            {
-                if (bulkCompanies.Companies == null || !bulkCompanies.Companies.Any())
-                {
-                    Console.WriteLine("No companies found in the input JSON.");
-                    return false;
-                }
-
-                Console.WriteLine($"📌 Processing {bulkCompanies.Companies.Count} Companies...");
-
-                var companiesToInsert = new List<Company>();
-                var projectsToInsert = new List<Project>();
-                var projectCompaniesToInsert = new List<ProjectCompany>();
-
-                foreach (var companyDto in bulkCompanies.Companies)
-                {
-                    var companyId = Guid.NewGuid();
-
-                    var company = new Company
-                    {
-                        CompanyId = companyId,
-                        CompanyName = companyDto.Name,
-                        Location = companyDto.Location,
-                        Website = companyDto.Website,
-                        CompanySize = companyDto.CompanySize,
-                        FoundedYear = companyDto.FoundedYear,
-                        Phone = companyDto.Phone,
-                        Email = companyDto.Email,
-                        Address = companyDto.Address,
-                        Verified = companyDto.Verified == 0,
-                    };
-
-                    _dbContext.ServiceCompanies.AddRange(companyDto.Services);
-
-                    companiesToInsert.Add(company);
-
-                    if (companyDto.Projects != null && companyDto.Projects.Any())
-                    {
-                        foreach (var projectDto in companyDto.Projects)
-                        {
-                            var project = new Project
-                            {
-                                ProjectId = Guid.NewGuid(),
-                                ProjectName = projectDto.ProjectName,
-                                Description = projectDto.Description,
-                                TechnologiesUsed = string.Join(", ", projectDto.TechnologiesUsed ?? new List<string>()),
-                                ClientType = projectDto.ClientType,
-                                StartDate = projectDto.StartDate,
-                                ProjectUrl = projectDto.ProjectUrl
-                            };
-
-                            if (projectDto.Services != null && projectDto.Services.Any())
-                            {
-                                var projectServiceMappings = projectDto.Services.Select(serviceId => new ServiceProject
-                                {
-                                    ProjectId = project.ProjectId,
-                                    ServiceId = serviceId.Id
-                                }).ToList();
-
-                                projectServiceMappings.AddRange(projectServiceMappings);
-
-                                _dbContext.ServiceProjects.AddRange(projectServiceMappings);
-                            }
-
-                            projectsToInsert.Add(project);
-                        }
-                    }
-                }
-
-                foreach (var project in projectsToInsert)
-                {
-                    var clientCompanyId = companiesToInsert
-                        .Where(c => c.CompanyId == project.ProjectCompany.ClientCompanyId)
-                        .Select(c => c.CompanyId)
-                        .FirstOrDefault();
-
-                    if (clientCompanyId != Guid.Empty) // Ensure a valid ID is found
-                    {
-                        projectCompaniesToInsert.Add(new ProjectCompany
-                        {
-                            ProjectId = project.ProjectId,
-                            ClientCompanyId = clientCompanyId,
-                            ProviderCompanyId = null // Or assign a valid provider if available
-                        });
-                    }
-                }
-
-
-                // Bulk Insert
-                await _dbContext.Companies.AddRangeAsync(companiesToInsert);
-                await _dbContext.Projects.AddRangeAsync(projectsToInsert);
-                await _dbContext.ProjectCompanies.AddRangeAsync(projectCompaniesToInsert);
-                await _dbContext.SaveChangesAsync();
-                await transaction.CommitAsync();
-
-                Console.WriteLine("All companies and projects added successfully.");
-
-                var mappedCompaniesForKafka = companiesToInsert.Select(company => new
-                {
-                    id = company.CompanyId,
-                    name = company.CompanyName,
-                    //services eklenecek
-                    location = company.Location,
-                    technologies_used = projectsToInsert
-                    .Where(p => projectCompaniesToInsert
-                        .Any(pc => pc.ProjectId == p.ProjectId && pc.ClientCompanyId == company.CompanyId))
-                    .Select(p => p.TechnologiesUsed)
-                    .Distinct()
-                    .ToList(),
-                    company_size = company.CompanySize,
-                    founded_year = company.FoundedYear
-                }).ToList();
-
-                try
-                {
-                    // Serialize the DTO to JSON
-                    var messageValue = System.Text.Json.JsonSerializer.Serialize(mappedCompaniesForKafka);
-
-                    // Create the Kafka message
-                    var message = new Message<string, string>
-                    {
-                        Key = DateTime.Now.ToString(),
-                        Value = messageValue
-                    };
-
-                    var result = await _kafkaProducer.ProduceAsync("addBulkCompanies", message);
-                    Console.WriteLine($"Sent message to Kafka topic {result.TopicPartitionOffset}");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error producing Kafka message: {ex.Message}");
-                    return false;
-                }
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                Console.WriteLine($"Error during bulk insert: {ex.Message}");
-                return false;
-            }
-        }
         public async Task<string> FreeTextSearchAsync(string searchQuery)
         {
             string fastApiUrl = "http://127.0.0.1:8000/search";

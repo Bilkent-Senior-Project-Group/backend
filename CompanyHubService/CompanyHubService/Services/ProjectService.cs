@@ -56,8 +56,8 @@ namespace CompanyHubService.Services
                 IsOnCompedia = project.IsOnCompedia,
                 IsCompleted = project.IsCompleted,
                 ProjectUrl = project.ProjectUrl,
-                ClientCompanyName = project.ProjectCompany.ClientCompany.CompanyName,
-                ProviderCompanyName = project.ProjectCompany.ProviderCompany.CompanyName,
+                ClientCompanyName = project.ProjectCompany.IsClient == 0 ? project.ProjectCompany.OtherCompanyName : project.ProjectCompany.IsClient == 1 ? project.ProjectCompany.ClientCompany.CompanyName : project.ProjectCompany.ClientCompany.CompanyName,
+                ProviderCompanyName = project.ProjectCompany.IsClient == 0 ? project.ProjectCompany.ProviderCompany.CompanyName : project.ProjectCompany.IsClient == 1 ? project.ProjectCompany.OtherCompanyName : project.ProjectCompany.ProviderCompany.CompanyName,
                 Services = services.Select(s => new ServiceDTO
                 {
                     Id = s.Id,
@@ -90,6 +90,8 @@ namespace CompanyHubService.Services
                 Description = request.Description,
                 TechnologiesUsed = request.TechnologiesUsed != null ? string.Join(", ", request.TechnologiesUsed) : "",
                 ClientType = request.ClientType,
+                Services = request.Services,
+                Impact = request.Impact,
             };
 
             dbContext.ProjectRequests.Add(projectRequest);
@@ -157,7 +159,7 @@ namespace CompanyHubService.Services
                 var projectServiceMappings = projectRequest.Services.Select(service => new ServiceProject
                 {
                     ProjectId = newProject.ProjectId,
-                    ServiceId = service.Id,
+                    ServiceId = service,
                 }).ToList();
 
                 projectServices.AddRange(projectServiceMappings);

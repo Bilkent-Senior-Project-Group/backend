@@ -74,7 +74,8 @@ public class ProjectController : ControllerBase
             Description = request.Description,
             TechnologiesUsed = request.TechnologiesUsed,
             ClientType = request.ClientType,
-            Services = request.Services
+            Services = request.Services,
+            Impact = request.Impact
         };
 
         var result = await projectService.CreateProjectRequestAsync(converted);
@@ -115,7 +116,12 @@ public class ProjectController : ControllerBase
             return Unauthorized(new { Message = "You are not authorized to view this project request." });
         }
 
-        var projectRequestDTO = new ProjectRequestDTO
+        // Fetch full services (with Id + Name)
+        var services = await dbContext.Services
+            .Where(s => projectRequest.Services.Contains(s.Id))
+            .ToListAsync();
+
+        var projectRequestDTO = new ProjectRequestViewDTO
         {
             ClientCompanyId = projectRequest.ClientCompanyId,
             ProviderCompanyId = projectRequest.ProviderCompanyId ?? Guid.Empty,
@@ -123,8 +129,13 @@ public class ProjectController : ControllerBase
             Description = projectRequest.Description,
             TechnologiesUsed = projectRequest.TechnologiesUsed?.Split(", ").ToList() ?? new List<string>(),
             ClientType = projectRequest.ClientType,
-            Services = projectRequest.Services,
+            Services = services.Select(s => new ServiceDTO
+            {
+                Id = s.Id,
+                Name = s.Name
+            }).ToList()
         };
+
 
         return Ok(projectRequestDTO);
     }

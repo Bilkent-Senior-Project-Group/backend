@@ -19,7 +19,9 @@ namespace CompanyHubService.DTOs
         public List<string> TechnologiesUsed { get; set; }
         public string ClientType { get; set; }
 
-        public List<Service> Services { get; set; }
+        public List<Guid> Services { get; set; }
+
+         public string Impact { get; set; }
     }
 }
 

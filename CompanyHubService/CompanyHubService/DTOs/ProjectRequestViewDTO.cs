@@ -5,7 +5,7 @@ using CompanyHubService.Models;
 
 namespace CompanyHubService.DTOs
 {
-    public class ProjectRequestDTO
+    public class ProjectRequestViewDTO
     {
         [Required]
         public Guid ClientCompanyId { get; set; } // ✅ The company making the request
@@ -22,9 +22,7 @@ namespace CompanyHubService.DTOs
 
         public string ClientType { get; set; }
 
-        public List<Guid> Services { get; set; }
-
-        public string Impact { get; set; }
+        public List<ServiceDTO> Services { get; set; }
 
     }
 }

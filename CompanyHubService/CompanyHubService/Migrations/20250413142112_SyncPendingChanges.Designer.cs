@@ -4,6 +4,7 @@ using CompanyHubService.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CompanyHubService.Migrations
 {
     [DbContext(typeof(CompanyHubDbContext))]
-    partial class CompanyHubDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250413142112_SyncPendingChanges")]
+    partial class SyncPendingChanges
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -61,10 +64,6 @@ namespace CompanyHubService.Migrations
 
                     b.Property<DateTime>("RequestDate")
                         .HasColumnType("datetime2");
-
-                    b.PrimitiveCollection<string>("Services")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("TechnologiesUsed")
                         .IsRequired()
@@ -358,9 +357,14 @@ namespace CompanyHubService.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<Guid?>("ProjectRequestRequestId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
                     b.HasIndex("IndustryId");
+
+                    b.HasIndex("ProjectRequestRequestId");
 
                     b.ToTable("Services");
                 });
@@ -791,6 +795,10 @@ namespace CompanyHubService.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("CompanyHubService.Data.ProjectRequest", null)
+                        .WithMany("Services")
+                        .HasForeignKey("ProjectRequestRequestId");
+
                     b.Navigation("Industry");
                 });
 
@@ -914,6 +922,11 @@ namespace CompanyHubService.Migrations
                         .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Company");
+                });
+
+            modelBuilder.Entity("CompanyHubService.Data.ProjectRequest", b =>
+                {
+                    b.Navigation("Services");
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.Company", b =>

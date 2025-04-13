@@ -22,5 +22,9 @@ namespace CompanyHubService.Models
 
         [ForeignKey("ProviderCompanyId")]
         public Company ProviderCompany { get; set; }
+
+        public string? OtherCompanyName { get; set; } // Used when the company is not in the database
+
+        public int IsClient { get; set; } // Indicates if the company is a client or provider
     }
 }
