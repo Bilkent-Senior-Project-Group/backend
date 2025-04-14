@@ -366,31 +366,47 @@ namespace CompanyHubService.Services
                 // Fetch company details from the SQL database
                 var companies = await _dbContext.Companies
                     .Where(c => companyIds.Contains(c.CompanyId))
-                    .Select(c => new
-                    {
-                        CompanyId = c.CompanyId,
-                        Name = c.CompanyName,
-                        Size = c.CompanySize.ToString(),
-                        Location = c.Location,
-                        Description = c.Description
-                    })
-                    .ToListAsync();
-
-                // Merge SQL data with distances from FastAPI
-                var enrichedResults = searchResults.Results
-                    .Join(companies,
-                          r => Guid.TryParse(r.CompanyId, out var guid) ? guid : Guid.Empty,
-                          c => c.CompanyId,
-                          (r, c) => new
+                    .Join(_dbContext.CitiesAndCountries,
+                          c => c.Location,
+                          loc => loc.ID,
+                          (c, loc) => new
                           {
                               c.CompanyId,
-                              c.Name,
-                              c.Size,
-                              c.Location,
-                              c.Description,
-                              r.Distance
+                              Name = c.CompanyName,
+                              Size = c.CompanySize.ToString(),
+                              Location = loc.City + " " + loc.Country,
+                              c.Description
                           })
-                    .ToList();
+                    .ToListAsync();
+
+
+                // Step 2: Fetch service names per company
+                var serviceMap = await _dbContext.ServiceCompanies
+                    .Where(sc => companyIds.Contains(sc.CompanyId))
+                    .Include(sc => sc.Service)
+                    .GroupBy(sc => sc.CompanyId)
+                    .ToDictionaryAsync(
+                        g => g.Key,
+                        g => g.Select(sc => sc.Service.Name).ToList()
+                    );
+
+                // Step 3: Merge search results with service names
+                var enrichedResults = searchResults.Results
+                .Join(companies,
+                      r => Guid.TryParse(r.CompanyId, out var guid) ? guid : Guid.Empty,
+                      c => c.CompanyId,
+                      (r, c) => new
+                      {
+                          c.CompanyId,
+                          c.Name,
+                          c.Size,
+                          Location = c.Location,
+                          c.Description,
+                          Services = serviceMap.ContainsKey(c.CompanyId) ? serviceMap[c.CompanyId] : new List<string>(),
+                          r.Distance
+                      })
+                .ToList();
+
 
                 await analyticsService.InsertSearchQueryDataAsync(companyIds, searchQuery.searchQuery);
 
