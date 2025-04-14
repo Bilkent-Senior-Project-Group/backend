@@ -289,7 +289,7 @@ namespace CompanyHubService.Controllers
             return Ok(companies);
         }
 
-        [HttpGet("FreeTextSearch/{textQuery}")]
+        [HttpPost("FreeTextSearch")]
         public async Task<IActionResult> FreeTextSearch(FreeTextSearchDTO textQuery)
         {
             if (string.IsNullOrEmpty(textQuery.searchQuery))
