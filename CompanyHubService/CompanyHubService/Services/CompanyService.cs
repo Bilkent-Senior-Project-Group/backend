@@ -289,11 +289,18 @@ namespace CompanyHubService.Services
             return companies;
         }
 
-        public async Task<string> FreeTextSearchAsync(string searchQuery)
+        public async Task<string> FreeTextSearchAsync(FreeTextSearchDTO searchQuery)
         {
             string fastApiUrl = "http://127.0.0.1:8000/search";
 
-            var payload = new { query = searchQuery };
+            // Create the payload with optional filters
+            var payload = new
+            {
+                query = searchQuery.searchQuery,
+                locations = searchQuery.locations,
+                service_ids = searchQuery.serviceIds?.Select(id => id.ToString()).ToList()
+            };
+
             var jsonPayload = JsonConvert.SerializeObject(payload);
             var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
 
@@ -333,8 +340,8 @@ namespace CompanyHubService.Services
                 // Merge SQL data with distances from FastAPI
                 var enrichedResults = searchResults.Results
                     .Join(companies,
-                          r => Guid.TryParse(r.CompanyId, out var guid) ? guid : Guid.Empty,  // Convert string ID to GUID
-                          c => c.CompanyId,  // This is already GUID
+                          r => Guid.TryParse(r.CompanyId, out var guid) ? guid : Guid.Empty,
+                          c => c.CompanyId,
                           (r, c) => new
                           {
                               c.CompanyId,
@@ -351,12 +358,21 @@ namespace CompanyHubService.Services
                 {
                     query = searchResults.Query,
                     extracted = searchResults.Extracted,
+                    appliedFilters = new
+                    {
+                        locations = searchQuery.locations,
+                        serviceIds = searchQuery.serviceIds
+                    },
                     results = enrichedResults
                 });
             }
             catch (Exception ex)
             {
-                return JsonConvert.SerializeObject(new { error = "Failed to process search", details = ex.Message });
+                return JsonConvert.SerializeObject(new
+                {
+                    error = "Failed to process search",
+                    details = ex.Message
+                });
             }
         }
 
@@ -370,8 +386,7 @@ namespace CompanyHubService.Services
 
         public class ExtractedFieldsDTO
         {
-            public List<string> Specialties { get; set; }
-            public List<string> Industries { get; set; }
+            public List<string> Expertise { get; set; }
             public List<string> TechnologiesUsed { get; set; }
         }
 
