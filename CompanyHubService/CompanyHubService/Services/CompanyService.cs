@@ -36,6 +36,7 @@ namespace CompanyHubService.Services
                 CompanyName = request.CompanyName,
                 Description = request.Description,
                 FoundedYear = request.FoundedYear,
+                Location = request.Location,
                 Address = request.Address,
                 Website = request.Website,
                 CompanySize = request.CompanySize,
@@ -161,25 +162,61 @@ namespace CompanyHubService.Services
             // Save all changes in a single transaction
             await _dbContext.SaveChangesAsync();
 
-            // Send Kafka message for company creation
             try
             {
-                var companyKafkaDTO = new CompanyKafkaDTO
+                // Create a list of service IDs and names
+                var serviceData = new List<object>();
+                foreach (var sc in serviceCompanies)
+                {
+                    // Get the service name from the service ID
+                    var service = await _dbContext.Services.FindAsync(sc.ServiceId);
+                    serviceData.Add(new
+                    {
+                        ServiceId = sc.ServiceId,
+                        ServiceName = service?.Name // Include null check
+                    });
+                }
+
+                // Create a list of simplified project data
+                var projectData = projects.Select(p => new
+                {
+                    ProjectId = p.ProjectId,
+                    ProjectName = p.ProjectName,
+                    Description = p.Description,
+                    TechnologiesUsed = p.TechnologiesUsed,
+                    ClientType = p.ClientType,
+                    StartDate = p.StartDate,
+                    CompletionDate = p.CompletionDate,
+                    IsOnCompedia = p.IsOnCompedia,
+                    IsCompleted = p.IsCompleted,
+                    ProjectUrl = p.ProjectUrl
+                    // Navigation properties are explicitly excluded
+                }).ToList();
+
+                var companyKafkaDTO = new
                 {
                     CompanyId = company.CompanyId,
+                    CompanyName = company.CompanyName,
                     Description = company.Description,
                     FoundedYear = company.FoundedYear,
                     CompanySize = company.CompanySize,
                     Location = company.Location,
                     OverallRating = company.OverallRating,
-                    ServiceCompanies = serviceCompanies,
-                    Projects = projects,
-                    Products = new List<Product>(), // Empty as new company
-                    Reviews = new List<Review>() // Empty as new company
+                    Services = serviceData,
+                    Projects = projectData,
+                    Products = new List<object>(), // Empty as new company
+                    Reviews = new List<object>() // Empty as new company
+                };
+
+                // Configure serialization options
+                var options = new JsonSerializerOptions
+                {
+                    WriteIndented = true, // For easier debugging
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase // Optional: for JSON naming conventions
                 };
 
                 // Serialize the DTO to JSON
-                var messageValue = System.Text.Json.JsonSerializer.Serialize(companyKafkaDTO);
+                var messageValue = System.Text.Json.JsonSerializer.Serialize(companyKafkaDTO, options);
 
                 // Create the Kafka message
                 var message = new Message<string, string>
@@ -291,7 +328,7 @@ namespace CompanyHubService.Services
 
         public async Task<string> FreeTextSearchAsync(FreeTextSearchDTO searchQuery)
         {
-            string fastApiUrl = "http://127.0.0.1:8000/search";
+            string fastApiUrl = "http://127.0.0.1:8001/search";
 
             // Create the payload with optional filters
             var payload = new
