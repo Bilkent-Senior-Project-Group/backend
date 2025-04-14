@@ -19,13 +19,15 @@ namespace CompanyHubService.Services
         private UserService userService { get; set; }
         private readonly IProducer<string, string> _kafkaProducer;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly AnalyticsService analyticsService;
 
-        public CompanyService(CompanyHubDbContext dbContext, UserService userService, IProducer<string, string> kafkaProducer, IHttpClientFactory httpClientFactory)
+        public CompanyService(CompanyHubDbContext dbContext, UserService userService, IProducer<string, string> kafkaProducer, IHttpClientFactory httpClientFactory, AnalyticsService analyticsService)
         {
             _dbContext = dbContext;
             this.userService = userService;
             _kafkaProducer = kafkaProducer;
             _httpClientFactory = httpClientFactory;
+            this.analyticsService = analyticsService;
         }
 
         public async Task<bool> CreateCompanyAsync(CreateCompanyRequestDTO request, string userId)
@@ -390,6 +392,8 @@ namespace CompanyHubService.Services
                           })
                     .OrderByDescending(r => r.Distance)
                     .ToList();
+
+                await analyticsService.InsertSearchQueryDataAsync(companyIds, searchQuery.searchQuery);
 
                 return JsonConvert.SerializeObject(new
                 {

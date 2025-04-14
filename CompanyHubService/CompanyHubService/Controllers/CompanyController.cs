@@ -25,9 +25,11 @@ namespace CompanyHubService.Controllers
 
         private readonly CompanyHubDbContext dbContext;
 
+        private readonly AnalyticsService analyticsService;
+
         private readonly BlobStorageService blobStorageService;
 
-        public CompanyController(IPdfExtractionService pdfExtractionService, CompanyService companyService, UserService userService, UserManager<User> userManager, CompanyHubDbContext dbContext, BlobStorageService blobStorageService)
+        public CompanyController(IPdfExtractionService pdfExtractionService, CompanyService companyService, UserService userService, UserManager<User> userManager, CompanyHubDbContext dbContext, BlobStorageService blobStorageService, AnalyticsService analyticsService)
         {
             this.pdfExtractionService = pdfExtractionService;
             this.companyService = companyService;
@@ -35,6 +37,7 @@ namespace CompanyHubService.Controllers
             this.userManager = userManager;
             this.dbContext = dbContext;
             this.blobStorageService = blobStorageService;
+            this.analyticsService = analyticsService;
         }
 
         [HttpPost("extract-from-pdf")]
@@ -299,6 +302,7 @@ namespace CompanyHubService.Controllers
 
             // Get the raw JSON string from the service
             string rawJsonResult = await companyService.FreeTextSearchAsync(textQuery);
+
 
 
             // Return it as ContentResult with proper content type
