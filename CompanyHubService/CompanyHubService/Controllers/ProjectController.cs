@@ -140,6 +140,28 @@ public class ProjectController : ControllerBase
         return Ok(projectRequestDTO);
     }
 
+    [HttpGet("GetProjectRequestsOfCompany/{companyId}")]
+    [Authorize(Roles = "Root, VerifiedUser, Admin")]
+    public async Task<IActionResult> GetProjectRequestsOfCompany(Guid companyId)
+    {
+
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        var isUserInCompany = await dbContext.UserCompanies
+        .AnyAsync(uc => uc.UserId == userId && uc.CompanyId == companyId);
+
+        if (!isUserInCompany)
+            return Forbid("You are not authorized to view this company's requests.");
+
+        var requests = await projectService.GetProjectRequestsOfCompanyAsync(companyId);
+
+        if (!requests.Any())
+            return NotFound(new { Message = "No pending project requests for this company." });
+
+        return Ok(requests);
+    }
+
+
     [HttpPost("ApproveProjectRequest/{requestId}")]
     [Authorize(Roles = "Root")] // Only root user can approve a project request.
     public async Task<IActionResult> ApproveProjectRequest(Guid requestId, [FromBody] bool isAccepted) // Again have a look later if we should get the id from the link or not.

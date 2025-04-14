@@ -7,6 +7,8 @@ namespace CompanyHubService.DTOs
 {
     public class ProjectRequestViewDTO
     {
+        public Guid RequestId { get; set; }
+
         [Required]
         public Guid ClientCompanyId { get; set; } // ✅ The company making the request
 
@@ -15,6 +17,9 @@ namespace CompanyHubService.DTOs
 
         [Required]
         public string ProjectName { get; set; }
+
+        public string ClientCompanyName { get; set; } // ✅ The name of the company making the request
+        public string ProviderCompanyName { get; set; } // ✅ The name of the company providing the service
 
         public string Description { get; set; }
 
