@@ -39,6 +39,7 @@ namespace CompanyHubService.Data
         public DbSet<Industry> Industries { get; set; }
         public DbSet<ServiceCompany> ServiceCompanies { get; set; }
         public DbSet<ServiceProject> ServiceProjects { get; set; }
+        public DbSet<CitiesAndCountries> CitiesAndCountries { get; set; }
 
         // Configuring relationships and table properties
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -193,6 +194,12 @@ namespace CompanyHubService.Data
                 .WithMany(s => s.ServiceProjects)
                 .HasForeignKey(sp => sp.ServiceId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // If your table name doesn't match the DbSet name, configure it:
+            modelBuilder.Entity<CitiesAndCountries>().ToTable("CitiesAndCountries");
+
+            // Configure any additional properties, keys, indexes, etc.
+            modelBuilder.Entity<CitiesAndCountries>().HasKey(c => c.ID);
         }
     }
 }
