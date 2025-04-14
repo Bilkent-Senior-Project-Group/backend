@@ -390,7 +390,6 @@ namespace CompanyHubService.Services
                               c.Description,
                               r.Distance
                           })
-                    .OrderByDescending(r => r.Distance)
                     .ToList();
 
                 await analyticsService.InsertSearchQueryDataAsync(companyIds, searchQuery.searchQuery);
