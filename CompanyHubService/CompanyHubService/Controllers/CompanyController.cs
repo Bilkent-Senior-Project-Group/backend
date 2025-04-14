@@ -290,9 +290,9 @@ namespace CompanyHubService.Controllers
         }
 
         [HttpGet("FreeTextSearch/{textQuery}")]
-        public async Task<IActionResult> FreeTextSearch(string textQuery)
+        public async Task<IActionResult> FreeTextSearch(FreeTextSearchDTO textQuery)
         {
-            if (string.IsNullOrEmpty(textQuery))
+            if (string.IsNullOrEmpty(textQuery.searchQuery))
             {
                 return BadRequest(new { Message = "Empty search" });
             }
@@ -363,9 +363,41 @@ namespace CompanyHubService.Controllers
             return Ok(results);
         }
 
+        [HttpGet("GetAllServices")]
+        public async Task<IActionResult> GetAllServices()
+        {
+            var services = await dbContext.Services.Include(q => q.Industry).GroupBy(q => q.IndustryId).ToListAsync();
 
+            if(services.Any())
+            {
+                return Ok(services);
+            }
+            else
+            {
+                return BadRequest("Services can't be returned");
+            }
+        }
 
+        [HttpGet("LocationSearch")]
+        public async Task<ActionResult<IEnumerable<CitiesAndCountries>>> SearchLocations(string term)
+        {
+            if (string.IsNullOrEmpty(term) || term.Length < 2)
+            {
+                return new List<CitiesAndCountries>();
+            }
+
+            // Convert the search term to lowercase for case-insensitive search
+            var searchTerm = term.ToLower();
+
+            // Search both City and Country fields and return the complete rows
+            var results = await dbContext.CitiesAndCountries
+                .Where(c => c.City.ToLower().Contains(searchTerm) ||
+                            c.Country.ToLower().Contains(searchTerm))
+                .Take(20) // Limit results to prevent large result sets
+                .ToListAsync();
+
+            return results;
+        }
     }
-
 
 }
