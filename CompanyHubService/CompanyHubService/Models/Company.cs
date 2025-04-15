@@ -29,7 +29,7 @@ namespace CompanyHubService.Models
 
         public double OverallRating { get; set; } = 0;
 
-        public string LogoUrl { get; set; }
+        public string LogoUrl { get; set; } = "https://azurelogo.blob.core.windows.net/profile-photos/defaultcompany.png";
 
         public ICollection<ServiceCompany> ServiceCompanies { get; set; } = new List<ServiceCompany>();
         public List<Project> Projects { get; set; } = new List<Project>();

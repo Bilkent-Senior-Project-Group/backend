@@ -68,40 +68,6 @@ namespace CompanyHubService.Controllers
             return Ok(companies);
         }
 
-
-        [HttpPost("AddUserToCompany")]
-        [Authorize(Roles = "Admin, Root")] // Maybe an invitation system can be added later. (InviteCompany table can be created)
-        // The root user should select its company from a dropdown list of its companies. 
-        public async Task<IActionResult> AddUserToCompany(string userId, string companyId) // Again DTO can be used.
-        {
-            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(companyId))
-            {
-                return BadRequest(new { Message = "Invalid input parameters." });
-            }
-
-            // Parse companyId to Guid
-            if (!Guid.TryParse(companyId, out var companyGuid))
-            {
-                return BadRequest(new { Message = "Invalid Company ID." });
-            }
-
-            var result = await userService.AddUserToCompany(userId, companyGuid);
-
-            if (result)
-            {
-                await notificationService.CreateNotificationAsync(
-                recipientId: userId,
-                message: "You have been added to a new company.",
-                notificationType: "User",
-                url: null
-                );
-
-                return Ok(new { Message = "User added and notified." });
-            }
-
-            return BadRequest(new { Message = "Failed to add user to company." });
-        }
-
         [HttpGet("GetNotifications")]
         [Authorize]
         public async Task<IActionResult> GetNotifications()

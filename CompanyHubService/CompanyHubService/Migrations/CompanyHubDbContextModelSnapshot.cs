@@ -76,7 +76,7 @@ namespace CompanyHubService.Migrations
 
                     b.HasIndex("ProviderCompanyId");
 
-                    b.ToTable("ProjectRequests");
+                    b.ToTable("ProjectRequests", (string)null);
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.CitiesAndCountries", b =>
@@ -150,7 +150,7 @@ namespace CompanyHubService.Migrations
 
                     b.HasKey("CompanyId");
 
-                    b.ToTable("Companies");
+                    b.ToTable("Companies", (string)null);
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.Industry", b =>
@@ -165,7 +165,7 @@ namespace CompanyHubService.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Industries");
+                    b.ToTable("Industries", (string)null);
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.Notification", b =>
@@ -198,7 +198,7 @@ namespace CompanyHubService.Migrations
 
                     b.HasKey("NotificationId");
 
-                    b.ToTable("Notifications");
+                    b.ToTable("Notifications", (string)null);
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.Product", b =>
@@ -222,7 +222,7 @@ namespace CompanyHubService.Migrations
 
                     b.HasIndex("CompanyId");
 
-                    b.ToTable("Products");
+                    b.ToTable("Products", (string)null);
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.ProductClient", b =>
@@ -245,7 +245,7 @@ namespace CompanyHubService.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("ProductClients");
+                    b.ToTable("ProductClients", (string)null);
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.Project", b =>
@@ -298,7 +298,7 @@ namespace CompanyHubService.Migrations
 
                     b.HasIndex("CompanyId");
 
-                    b.ToTable("Projects");
+                    b.ToTable("Projects", (string)null);
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.ProjectCompany", b =>
@@ -324,7 +324,7 @@ namespace CompanyHubService.Migrations
 
                     b.HasIndex("ProviderCompanyId");
 
-                    b.ToTable("ProjectCompanies");
+                    b.ToTable("ProjectCompanies", (string)null);
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.Review", b =>
@@ -361,7 +361,7 @@ namespace CompanyHubService.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Reviews");
+                    b.ToTable("Reviews", (string)null);
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.Service", b =>
@@ -381,7 +381,7 @@ namespace CompanyHubService.Migrations
 
                     b.HasIndex("IndustryId");
 
-                    b.ToTable("Services");
+                    b.ToTable("Services", (string)null);
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.ServiceCompany", b =>
@@ -412,7 +412,7 @@ namespace CompanyHubService.Migrations
 
                     b.HasIndex("ServiceId");
 
-                    b.ToTable("ServiceCompanies");
+                    b.ToTable("ServiceCompanies", (string)null);
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.ServiceProject", b =>
@@ -435,7 +435,7 @@ namespace CompanyHubService.Migrations
 
                     b.HasIndex("ServiceId");
 
-                    b.ToTable("ServiceProjects");
+                    b.ToTable("ServiceProjects", (string)null);
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.User", b =>
@@ -544,7 +544,7 @@ namespace CompanyHubService.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserCompanies");
+                    b.ToTable("UserCompanies", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
