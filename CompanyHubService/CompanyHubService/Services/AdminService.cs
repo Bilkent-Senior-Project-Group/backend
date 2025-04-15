@@ -87,7 +87,7 @@ namespace CompanyHubService.Services
                     Website = companyDto.Website,
                     CompanySize = companyDto.CompanySize,
                     FoundedYear = companyDto.FoundedYear,
-                    LogoUrl = "https://default.logo.url/logo.png",
+                    LogoUrl = "https://azurelogo.blob.core.windows.net/company-logos/defaultcompany.png",
                     Phone = string.IsNullOrEmpty(companyDto.Phone) ? "Unknown" : companyDto.Phone, // ✅ Default value
                     Email = string.IsNullOrEmpty(companyDto.Email) ? "Unknown" : companyDto.Email, // ✅ Default value
                     Verified = true,
@@ -106,7 +106,7 @@ namespace CompanyHubService.Services
 
                 Console.WriteLine($"Successfully added company: {company.CompanyName}");
 
-                
+
 
                 // Add the project-service mappings to the DbContext in a single operation
                 if (serviceCompanies.Any())
@@ -167,7 +167,7 @@ namespace CompanyHubService.Services
                             clientCompany = providerCompany;
                             flag = 1;
                             IsClient = 0;
-    
+
                         }
                         else if (providerCompany == null && clientCompany != null)
                         {
@@ -199,7 +199,7 @@ namespace CompanyHubService.Services
                             ClientCompanyId = flag == 0 ? clientCompany.CompanyId : flag == 1 ? providerCompany.CompanyId : clientCompany.CompanyId,
                             ProviderCompanyId = flag == 0 ? providerCompany.CompanyId : flag == 1 ? clientCompany.CompanyId : providerCompany.CompanyId,
                             OtherCompanyName = flag == 0 ? null : flag == 1 ? p.ClientCompanyName : p.ProviderCompanyName,
-                            IsClient = IsClient 
+                            IsClient = IsClient
                         };
 
                         projectCompanies.Add(newProjectCompany);
@@ -430,7 +430,7 @@ namespace CompanyHubService.Services
                         Email = companyDto.Email ?? "Unknown",
                         Address = companyDto.Address ?? "Unknown",
                         Verified = true,
-                        LogoUrl = "https://default.logo.url/logo.png"
+                        LogoUrl = "https://azurelogo.blob.core.windows.net/company-logos/defaultcompany.png"
                     };
 
                     companiesToInsert.Add(company);
@@ -447,7 +447,7 @@ namespace CompanyHubService.Services
                             ServiceId = serviceId
                         }));
                     }
-                    
+
                     if (companyDto.Portfolio != null && companyDto.Portfolio.Any())
                     {
                         foreach (var projectDto in companyDto.Portfolio)

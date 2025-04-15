@@ -43,7 +43,7 @@ namespace CompanyHubService.Services
                 Verified = false,
                 Phone = request.Phone,
                 Email = request.Email,
-                LogoUrl = "https://default.logo.url/logo.png"
+                LogoUrl = "https://azurelogo.blob.core.windows.net/company-logos/defaultcompany.png"
 
             };
 
@@ -98,7 +98,7 @@ namespace CompanyHubService.Services
                         clientCompany = providerCompany;
                         flag = 1;
                         IsClient = 0;
- 
+
                     }
                     else if (providerCompany == null && clientCompany != null)
                     {
@@ -130,7 +130,7 @@ namespace CompanyHubService.Services
                         ClientCompanyId = flag == 0 ? clientCompany.CompanyId : flag == 1 ? providerCompany.CompanyId : clientCompany.CompanyId,
                         ProviderCompanyId = flag == 0 ? providerCompany.CompanyId : flag == 1 ? clientCompany.CompanyId : providerCompany.CompanyId,
                         OtherCompanyName = flag == 0 ? null : flag == 1 ? p.ClientCompanyName : p.ProviderCompanyName,
-                        IsClient = IsClient 
+                        IsClient = IsClient
                     };
 
                     projectCompanies.Add(newProjectCompany);
@@ -255,6 +255,37 @@ namespace CompanyHubService.Services
                     Console.WriteLine($"Company with ID {companyProfileDTO.CompanyId} not found");
                     return false;
                 }
+
+                if (!string.IsNullOrWhiteSpace(companyProfileDTO.Description))
+                    company.Description = companyProfileDTO.Description;
+
+                if (companyProfileDTO.FoundedYear != 0)
+                    company.FoundedYear = companyProfileDTO.FoundedYear;
+
+                if (!string.IsNullOrWhiteSpace(companyProfileDTO.CompanySize))
+                    company.CompanySize = companyProfileDTO.CompanySize;
+
+                if (companyProfileDTO.Location != 0)
+                    company.Location = companyProfileDTO.Location;
+
+                if (!string.IsNullOrWhiteSpace(companyProfileDTO.Phone))
+                    company.Phone = companyProfileDTO.Phone;
+
+                if (!string.IsNullOrWhiteSpace(companyProfileDTO.Email))
+                    company.Email = companyProfileDTO.Email;
+
+                if (!string.IsNullOrWhiteSpace(companyProfileDTO.Address))
+                    company.Address = companyProfileDTO.Address;
+
+                if (!string.IsNullOrWhiteSpace(companyProfileDTO.Website))
+                    company.Website = companyProfileDTO.Website;
+
+                if (!string.IsNullOrWhiteSpace(companyProfileDTO.LogoUrl))
+                    company.LogoUrl = companyProfileDTO.LogoUrl;
+
+
+                await _dbContext.SaveChangesAsync();
+
 
                 // Create the DTO with only the fields we want to send
                 var companyKafkaDTO = new CompanyKafkaDTO

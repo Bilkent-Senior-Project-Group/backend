@@ -162,7 +162,19 @@ namespace CompanyHubService.Controllers
 
 
             var services = await dbContext.ServiceCompanies
-                .Where(sc => sc.CompanyId == company.CompanyId).ToListAsync();
+            .Where(sc => sc.CompanyId == company.CompanyId)
+            .Include(sc => sc.Service)
+                .ThenInclude(s => s.Industry)
+            .Select(sc => new ServiceIndustryViewDTO
+            {
+                Id = sc.Service.Id,
+                ServiceName = sc.Service.Name,
+                IndustryId = sc.Service.IndustryId,
+                IndustryName = sc.Service.Industry.Name,
+                Percentage = sc.Percentage
+            })
+            .ToListAsync();
+
 
             var companyDTO = new CompanyProfileDTO
             {
@@ -179,7 +191,8 @@ namespace CompanyHubService.Controllers
                 Email = company.Email,
                 OverallRating = company.OverallRating,
                 Projects = projects,
-                Services = services
+                Services = services,
+                LogoUrl = company.LogoUrl,
             };
 
             return Ok(companyDTO);
@@ -187,8 +200,18 @@ namespace CompanyHubService.Controllers
 
         [HttpPost("ModifyCompanyProfile")]
         [Authorize(Roles = "Root, Admin")] // Maybe VerifiedUser can modify their company profile too. Admin might be able to modify any company profile
-        public async Task<IActionResult> ModifyCompanyProfile(CompanyProfileDTO companyProfileDTO)
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> ModifyCompanyProfile(CompanyProfileDTO companyProfileDTO, IFormFile logoFile)
         {
+            if (logoFile != null && logoFile.Length > 0)
+            {
+                var fileName = $"{companyProfileDTO.CompanyId}_{logoFile.FileName}";
+                using var stream = logoFile.OpenReadStream();
+                var logoUrl = await blobStorageService.UploadLogoAsync(stream, fileName);
+                companyProfileDTO.LogoUrl = logoUrl;
+            }
+
+
             if (!ModelState.IsValid)
             {
                 return BadRequest(new { Message = "Invalid input parameters." });
@@ -280,9 +303,17 @@ namespace CompanyHubService.Controllers
                     Description = c.Description,
                     Location = c.Location,
                     CompanySize = c.CompanySize,
-                    Services = c.ServiceCompanies  // Updated property name
-                        .Where(sc => sc.CompanyId == c.CompanyId)
-                        .ToList()
+                    Services = c.ServiceCompanies
+                    .Where(sc => sc.CompanyId == c.CompanyId)
+                    .Select(sc => new ServiceIndustryViewDTO
+                    {
+                        Id = sc.Service.Id,
+                        ServiceName = sc.Service.Name,
+                        IndustryId = sc.Service.IndustryId,
+                        IndustryName = sc.Service.Industry.Name,
+                        Percentage = sc.Percentage
+                    }).ToList()
+
                 })
                 .ToListAsync();
 
@@ -305,28 +336,6 @@ namespace CompanyHubService.Controllers
             return Content(rawJsonResult, "application/json");
         }
 
-        // Update this method in such a way that only the root user of the company should be able to add logo.
-        [HttpPost("UploadLogo/{companyId}")]
-        [Consumes("multipart/form-data")] // for swagger test
-        public async Task<IActionResult> UploadCompanyLogo(Guid companyId, IFormFile file)
-        {
-            if (file == null || file.Length == 0)
-                return BadRequest("No file uploaded.");
-
-            var company = await dbContext.Companies.FindAsync(companyId);
-            if (company == null)
-                return NotFound("Company not found.");
-
-            var fileName = $"{companyId}_{file.FileName}";
-            using var stream = file.OpenReadStream();
-            var logoUrl = await blobStorageService.UploadLogoAsync(stream, fileName);
-
-            company.LogoUrl = logoUrl;
-            await dbContext.SaveChangesAsync();
-
-            return Ok(new { Message = "Logo uploaded successfully.", LogoUrl = logoUrl });
-        }
-
         // Update this method in such a way that only the root user of the company should be able to delete logo.
         [HttpDelete("DeleteLogo/{companyId}")]
         public async Task<IActionResult> DeleteCompanyLogo(Guid companyId)
@@ -338,7 +347,7 @@ namespace CompanyHubService.Controllers
             var fileName = company.LogoUrl.Split('/').Last(); // Extract file name
             await blobStorageService.DeleteLogoAsync(fileName);
 
-            company.LogoUrl = null;
+            company.LogoUrl = "https://azurelogo.blob.core.windows.net/company-logos/defaultcompany.png";
             await dbContext.SaveChangesAsync();
 
             return Ok(new { Message = "Logo deleted successfully." });
@@ -368,7 +377,7 @@ namespace CompanyHubService.Controllers
         {
             var services = await dbContext.Services.Include(q => q.Industry).GroupBy(q => q.IndustryId).ToListAsync();
 
-            if(services.Any())
+            if (services.Any())
             {
                 return Ok(services);
             }

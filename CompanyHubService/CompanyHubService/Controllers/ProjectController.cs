@@ -42,20 +42,6 @@ public class ProjectController : ControllerBase
 
     }
 
-    // Here the root user selects his/her company as the client company.
-    // The root user can select his/her company from a dropdown list of his/her companies.
-    // WE CAN DELETE THIS IF THE LATTER WORKS.
-    [HttpPost("CreateProjectRequest")]
-    [Authorize(Roles = "Root")] // Only root user can create a project request.   
-    public async Task<IActionResult> CreateProjectRequest([FromBody] ProjectRequestDTO request)
-    {
-        var result = await projectService.CreateProjectRequestAsync(request);
-        if (result != "Project request sent successfully.")
-            return BadRequest(new { Message = result });
-
-        return Ok(new { Message = result });
-    }
-
     [HttpPost("CreateProjectRequestByName")]
     [Authorize(Roles = "Root")]
     public async Task<IActionResult> CreateProjectRequestByName([FromBody] ProjectRequestByNameDTO request)
