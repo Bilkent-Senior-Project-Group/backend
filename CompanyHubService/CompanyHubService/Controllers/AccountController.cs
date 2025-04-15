@@ -171,6 +171,23 @@ public class AccountController : ControllerBase
         return Ok(new { IsRegistered = isRegistered });
     }
 
+    // For authenticated users
+    [HttpPost("ChangePassword")]
+    [Authorize]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDTO dto)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var user = await _userManager.FindByIdAsync(userId);
+
+        var result = await _userManager.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword);
+
+        if (!result.Succeeded)
+            return BadRequest(new { Errors = result.Errors });
+
+        return Ok(new { Message = "Password changed successfully." });
+    }
+
+
     [HttpPost("ForgotPassword")]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDTO model)
     {
