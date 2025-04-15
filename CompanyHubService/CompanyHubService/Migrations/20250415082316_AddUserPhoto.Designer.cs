@@ -4,6 +4,7 @@ using CompanyHubService.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CompanyHubService.Migrations
 {
     [DbContext(typeof(CompanyHubDbContext))]
-    partial class CompanyHubDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250415082316_AddUserPhoto")]
+    partial class AddUserPhoto
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -248,33 +251,6 @@ namespace CompanyHubService.Migrations
                     b.ToTable("ProductClients");
                 });
 
-            modelBuilder.Entity("CompanyHubService.Models.ProfileView", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<Guid>("CompanyId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("FromWhere")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("ViewDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("VisitorUserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CompanyId");
-
-                    b.HasIndex("VisitorUserId");
-
-                    b.ToTable("ProfileViews");
-                });
-
             modelBuilder.Entity("CompanyHubService.Models.Project", b =>
                 {
                     b.Property<Guid>("ProjectId")
@@ -389,37 +365,6 @@ namespace CompanyHubService.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Reviews");
-                });
-
-            modelBuilder.Entity("CompanyHubService.Models.SearchQueryLog", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("CompanyIds")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("QueryText")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<DateTime>("SearchDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("VisitorId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("VisitorId");
-
-                    b.ToTable("SearchQueryLogs");
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.Service", b =>
@@ -807,21 +752,6 @@ namespace CompanyHubService.Migrations
                     b.Navigation("Product");
                 });
 
-            modelBuilder.Entity("CompanyHubService.Models.ProfileView", b =>
-                {
-                    b.HasOne("CompanyHubService.Models.Company", null)
-                        .WithMany()
-                        .HasForeignKey("CompanyId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("CompanyHubService.Models.User", null)
-                        .WithMany()
-                        .HasForeignKey("VisitorUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("CompanyHubService.Models.Project", b =>
                 {
                     b.HasOne("CompanyHubService.Models.Company", null)
@@ -876,15 +806,6 @@ namespace CompanyHubService.Migrations
                     b.Navigation("Project");
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("CompanyHubService.Models.SearchQueryLog", b =>
-                {
-                    b.HasOne("CompanyHubService.Models.User", null)
-                        .WithMany()
-                        .HasForeignKey("VisitorId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.Service", b =>
