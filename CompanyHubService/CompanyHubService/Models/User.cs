@@ -18,7 +18,8 @@ namespace CompanyHubService.Models
 
         public bool IsAdmin { get; set; }
 
-        public string? PhotoUrl { get; set; }
+        // Set default value to https://azurelogo.blob.core.windows.net/profile-photos/defaultuser.jpg
+        public string? PhotoUrl { get; set; } = "https://azurelogo.blob.core.windows.net/profile-photos/defaultuser.jpg";
 
         public ICollection<Review> Reviews { get; set; } = new List<Review>();
 

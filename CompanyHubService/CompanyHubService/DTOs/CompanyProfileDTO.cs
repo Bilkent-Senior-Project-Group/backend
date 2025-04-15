@@ -47,6 +47,10 @@ namespace CompanyHubService.DTOs
         // [Required]
         public string Address { get; set; } = "Unknown"; // Default to "Unknown"
 
-        public List<ServiceCompany> Services { get; set; }
+        public string LogoUrl { get; set; } = "https://azurelogo.blob.core.windows.net/profile-photos/defaultcompany.png"; // Default logo URL
+
+
+
+        public List<ServiceIndustryViewDTO> Services { get; set; }
     }
 }
