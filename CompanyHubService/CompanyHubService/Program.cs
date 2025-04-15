@@ -13,6 +13,7 @@ using Confluent.Kafka;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.OpenApi.Models;
+using Azure.Storage.Blobs;
 
 
 
@@ -109,7 +110,9 @@ builder.Services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();
 builder.Services.AddScoped<IPdfExtractionService, PdfExtractionService>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddSingleton<BlobStorageService>();
-
+builder.Services.AddSingleton(new BlobServiceClient(
+    builder.Configuration["AzureBlobStorage:ConnectionString"]
+));
 
 
 
