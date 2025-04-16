@@ -111,12 +111,9 @@ builder.Services.AddScoped<IPdfExtractionService, PdfExtractionService>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddSingleton<BlobStorageService>();
 builder.Services.AddScoped<AnalyticsService>();
-
-
 builder.Services.AddSingleton(new BlobServiceClient(
     builder.Configuration["AzureBlobStorage:ConnectionString"]
-));builder.Services.AddScoped<AnalyticsService>();
-
+));
 
 
 

@@ -412,7 +412,6 @@ namespace CompanyHubService.Services
                           })
                     .ToListAsync();
 
-
                 // Step 2: Fetch service names per company
                 var serviceMap = await _dbContext.ServiceCompanies
                     .Where(sc => companyIds.Contains(sc.CompanyId))
@@ -425,25 +424,24 @@ namespace CompanyHubService.Services
 
                 // Step 3: Merge search results with service names
                 var enrichedResults = searchResults.Results
-                    .Join(companies,
-                          r => Guid.TryParse(r.CompanyId, out var guid) ? guid : Guid.Empty,
-                          c => c.CompanyId,
-                          (r, c) => new
-                          {
-                              c.CompanyId,
-                              c.Name,
-                              c.Size,
-                              c.Location,
-                              c.Description,
-                              r.Distance
-                          })
-                    .OrderByDescending(r => r.Distance)
-                    .ToList();
-                    
+                .Join(companies,
+                      r => Guid.TryParse(r.CompanyId, out var guid) ? guid : Guid.Empty,
+                      c => c.CompanyId,
+                      (r, c) => new
+                      {
+                          c.CompanyId,
+                          c.Name,
+                          c.Size,
+                          Location = c.Location,
+                          c.Description,
+                          Services = serviceMap.ContainsKey(c.CompanyId) ? serviceMap[c.CompanyId] : new List<string>(),
+                          r.Distance
+                      })
+                .ToList();
 
-                
+
                 await analyticsService.InsertSearchQueryDataAsync(companyIds, searchQuery.searchQuery, userId);
-
+              
                 return JsonConvert.SerializeObject(new
                 {
                     query = searchResults.Query,
