@@ -47,6 +47,27 @@ namespace CompanyHubService.Controllers
             return Ok(users);
         }
 
+        [HttpGet("GetUserProfileById/{userId}")]
+        [Authorize]
+        public async Task<IActionResult> GetUserProfileById(string userId)
+        {
+            var user = await userManager.FindByIdAsync(userId);
+            if (user == null)
+                return NotFound(new { Message = "User not found." });
+
+            var profile = new UserProfileDTO
+            {
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                PhotoUrl = user.PhotoUrl,
+                PhoneNumber = user.PhoneNumber,
+                UserName = user.UserName
+            };
+
+            return Ok(profile);
+        }
+
+
         [HttpGet("GetUserCompanies")]
         [Authorize]
         public async Task<IActionResult> GetUserCompanies()
