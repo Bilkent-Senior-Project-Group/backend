@@ -149,6 +149,7 @@ namespace CompanyHubService.Services
                 StartDate = DateTime.UtcNow,
                 IsOnCompedia = true,
                 ProjectUrl = "https://default.url",
+                IsCompleted = false,
             };
 
             var projectServices = new List<ServiceProject> { }; // List to hold project-service mappings

@@ -25,6 +25,11 @@ namespace CompanyHubService.DTOs
         // [Required]
         public int Location { get; set; }
 
+        public string? City { get; set; }
+        public string? Country { get; set; }
+
+        public int TotalReviews { get; set; }
+
         // [Required]
         public string Website { get; set; }
 

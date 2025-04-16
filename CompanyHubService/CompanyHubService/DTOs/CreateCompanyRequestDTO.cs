@@ -24,6 +24,7 @@ namespace CompanyHubService.DTOs
         public string Phone { get; set; }
 
         public string Email { get; set; }
+        public bool AddedOnPage { get; set; } = false; // Default to false
 
         public List<Guid> Services { get; set; }
         public List<string> Partnerships { get; set; } = new List<string>(); // Not required

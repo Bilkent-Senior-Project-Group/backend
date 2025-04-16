@@ -31,6 +31,8 @@ namespace CompanyHubService.Models
 
         public string LogoUrl { get; set; } = "https://azurelogo.blob.core.windows.net/profile-photos/defaultcompany.png";
 
+        public bool AddedOnPage { get; set; }
+
         public ICollection<ServiceCompany> ServiceCompanies { get; set; } = new List<ServiceCompany>();
         public List<Project> Projects { get; set; } = new List<Project>();
         // Navigation property for Products

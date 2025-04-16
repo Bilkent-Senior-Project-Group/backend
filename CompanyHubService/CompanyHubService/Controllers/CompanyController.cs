@@ -175,6 +175,18 @@ namespace CompanyHubService.Controllers
             })
             .ToListAsync();
 
+            var cityCountry = await dbContext.CitiesAndCountries
+                .Where(cc => cc.ID == company.Location)
+                .FirstOrDefaultAsync();
+
+            var providerProjectIds = await dbContext.ProjectCompanies
+            .Where(pc => pc.ProviderCompanyId == company.CompanyId)
+            .Select(pc => pc.ProjectId)
+            .ToListAsync();
+
+            var totalReviewsAsProvider = await dbContext.Reviews
+            .CountAsync(r => providerProjectIds.Contains(r.ProjectId));
+
 
             var companyDTO = new CompanyProfileDTO
             {
@@ -184,6 +196,8 @@ namespace CompanyHubService.Controllers
                 FoundedYear = company.FoundedYear,
                 Address = company.Address,
                 Location = company.Location,
+                City = cityCountry?.City,
+                Country = cityCountry?.Country,
                 Website = company.Website,
                 Verified = company.Verified ? 1 : 0,
                 CompanySize = company.CompanySize,
@@ -193,6 +207,7 @@ namespace CompanyHubService.Controllers
                 Projects = projects,
                 Services = services,
                 LogoUrl = company.LogoUrl,
+                TotalReviews = totalReviewsAsProvider
             };
 
             return Ok(companyDTO);
@@ -200,17 +215,8 @@ namespace CompanyHubService.Controllers
 
         [HttpPost("ModifyCompanyProfile")]
         [Authorize(Roles = "Root, Admin")] // Maybe VerifiedUser can modify their company profile too. Admin might be able to modify any company profile
-        [Consumes("multipart/form-data")]
-        public async Task<IActionResult> ModifyCompanyProfile(CompanyProfileDTO companyProfileDTO, IFormFile logoFile)
+        public async Task<IActionResult> ModifyCompanyProfile(CompanyProfileDTO companyProfileDTO)
         {
-            if (logoFile != null && logoFile.Length > 0)
-            {
-                var fileName = $"{companyProfileDTO.CompanyId}_{logoFile.FileName}";
-                using var stream = logoFile.OpenReadStream();
-                var logoUrl = await blobStorageService.UploadLogoAsync(stream, fileName);
-                companyProfileDTO.LogoUrl = logoUrl;
-            }
-
 
             if (!ModelState.IsValid)
             {
@@ -294,31 +300,37 @@ namespace CompanyHubService.Controllers
         {
             var companies = await dbContext.Companies
                 .Where(c => c.Verified)
-                .OrderByDescending(c => c.FoundedYear) // You can change this to rating if needed
+                .OrderByDescending(c => c.FoundedYear)
                 .Take(10)
-                .Select(c => new CompanyProfileDTO
-                {
-                    CompanyId = c.CompanyId,
-                    Name = c.CompanyName,
-                    Description = c.Description,
-                    Location = c.Location,
-                    CompanySize = c.CompanySize,
-                    Services = c.ServiceCompanies
-                    .Where(sc => sc.CompanyId == c.CompanyId)
-                    .Select(sc => new ServiceIndustryViewDTO
-                    {
-                        Id = sc.Service.Id,
-                        ServiceName = sc.Service.Name,
-                        IndustryId = sc.Service.IndustryId,
-                        IndustryName = sc.Service.Industry.Name,
-                        Percentage = sc.Percentage
-                    }).ToList()
-
-                })
+                .Include(c => c.ServiceCompanies)
+                    .ThenInclude(sc => sc.Service)
+                        .ThenInclude(s => s.Industry)
                 .ToListAsync();
 
-            return Ok(companies);
+            var locationMap = await dbContext.CitiesAndCountries.ToDictionaryAsync(cc => cc.ID, cc => cc);
+
+            var result = companies.Select(c => new CompanyProfileDTO
+            {
+                CompanyId = c.CompanyId,
+                Name = c.CompanyName,
+                Description = c.Description,
+                Location = c.Location,
+                City = locationMap.ContainsKey(c.Location) ? locationMap[c.Location].City : null,
+                Country = locationMap.ContainsKey(c.Location) ? locationMap[c.Location].Country : null,
+                CompanySize = c.CompanySize,
+                Services = c.ServiceCompanies.Select(sc => new ServiceIndustryViewDTO
+                {
+                    Id = sc.Service.Id,
+                    ServiceName = sc.Service.Name,
+                    IndustryId = sc.Service.IndustryId,
+                    IndustryName = sc.Service.Industry.Name,
+                    Percentage = sc.Percentage
+                }).ToList()
+            }).ToList();
+
+            return Ok(result);
         }
+
 
         [HttpPost("FreeTextSearch")]
         public async Task<IActionResult> FreeTextSearch(FreeTextSearchDTO textQuery)
@@ -334,6 +346,27 @@ namespace CompanyHubService.Controllers
 
             // Return it as ContentResult with proper content type
             return Content(rawJsonResult, "application/json");
+        }
+
+        [HttpPost("UploadLogo/{companyId}")]
+        [Consumes("multipart/form-data")] // for swagger test
+        public async Task<IActionResult> UploadCompanyLogo(Guid companyId, IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("No file uploaded.");
+
+            var company = await dbContext.Companies.FindAsync(companyId);
+            if (company == null)
+                return NotFound("Company not found.");
+
+            var fileName = $"{companyId}_{file.FileName}";
+            using var stream = file.OpenReadStream();
+            var logoUrl = await blobStorageService.UploadLogoAsync(stream, fileName);
+
+            company.LogoUrl = logoUrl;
+            await dbContext.SaveChangesAsync();
+
+            return Ok(new { Message = "Logo uploaded successfully.", LogoUrl = logoUrl });
         }
 
         // Update this method in such a way that only the root user of the company should be able to delete logo.

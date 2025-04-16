@@ -43,8 +43,8 @@ namespace CompanyHubService.Services
                 Verified = false,
                 Phone = request.Phone,
                 Email = request.Email,
-                LogoUrl = "https://azurelogo.blob.core.windows.net/company-logos/defaultcompany.png"
-
+                LogoUrl = "https://azurelogo.blob.core.windows.net/company-logos/defaultcompany.png",
+                AddedOnPage = request.AddedOnPage
             };
 
             // Create ServiceCompany mappings
@@ -279,10 +279,6 @@ namespace CompanyHubService.Services
 
                 if (!string.IsNullOrWhiteSpace(companyProfileDTO.Website))
                     company.Website = companyProfileDTO.Website;
-
-                if (!string.IsNullOrWhiteSpace(companyProfileDTO.LogoUrl))
-                    company.LogoUrl = companyProfileDTO.LogoUrl;
-
 
                 await _dbContext.SaveChangesAsync();
 
