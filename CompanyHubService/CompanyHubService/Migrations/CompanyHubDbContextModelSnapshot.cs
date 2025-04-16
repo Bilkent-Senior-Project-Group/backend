@@ -98,6 +98,28 @@ namespace CompanyHubService.Migrations
                     b.ToTable("CitiesAndCountries", (string)null);
                 });
 
+            modelBuilder.Entity("CompanyHubService.Models.CitiesAndCountries", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
+
+                    b.Property<string>("City")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Country")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("ID");
+
+                    b.ToTable("CitiesAndCountries", null, t =>
+                        {
+                            t.ExcludeFromMigrations();
+                        });
+                });
+
             modelBuilder.Entity("CompanyHubService.Models.Company", b =>
                 {
                     b.Property<Guid>("CompanyId")
