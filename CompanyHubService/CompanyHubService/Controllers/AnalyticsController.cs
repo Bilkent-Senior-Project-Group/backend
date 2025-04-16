@@ -20,28 +20,28 @@ public class AnalyticsController : ControllerBase
     public async Task<IActionResult> GetSearchQueries(Guid companyId)
     {
         var searchQueries = await _analyticsService.GetSearchQueriesAsync(companyId);
-        if (searchQueries == null || searchQueries.Count == 0)
-            return NotFound(new { Message = "No search queries found." });
-
+        
+        
         return Ok(searchQueries);
     }
+
     [HttpGet("GetProfileViews/{companyId}")]
     public async Task<IActionResult> GetProfileViews(Guid companyId)
     {
         var profileViews = await _analyticsService.GetVisitorCompaniesAsync(companyId);
-        if (profileViews == null || profileViews.Count == 0)
-            return NotFound(new { Message = "No profile views found." });
-
+        
         return Ok(profileViews);
     }
 
     [HttpPost("InsertSearchQueryData")]
-    public async Task<IActionResult> InsertSearchQueryData([FromBody] SearchQueryLogDTO searchQueryLogDto)
+    public async Task<IActionResult> InsertSearchQueryData([FromBody] SearchQueryLogDTO searchQueryLogDto, 
+        [FromQuery] string visitorId)
     {
         if (searchQueryLogDto == null)
             return BadRequest(new { Message = "Invalid data." });
+        
 
-        await _analyticsService.InsertSearchQueryDataAsync(searchQueryLogDto.CompanyIds, searchQueryLogDto.QueryText);
+        await _analyticsService.InsertSearchQueryDataAsync(searchQueryLogDto.CompanyIds, searchQueryLogDto.QueryText, visitorId);
         return Ok(new { Message = "Search query data inserted successfully." });
     }
     [HttpPost("InsertProfileViewData")]

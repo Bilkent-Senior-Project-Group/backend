@@ -10,6 +10,8 @@ using Newtonsoft.Json;
 using System.Text;
 using Newtonsoft.Json.Linq;
 using iText.Commons.Actions.Contexts;
+using iText.Kernel.Colors;
+using System.Security.Claims;
 
 namespace CompanyHubService.Services
 {
@@ -359,9 +361,9 @@ namespace CompanyHubService.Services
             return companies;
         }
 
-        public async Task<string> FreeTextSearchAsync(FreeTextSearchDTO searchQuery)
+        public async Task<string> FreeTextSearchAsync(FreeTextSearchDTO searchQuery, string? userId)
         {
-            string fastApiUrl = "http://127.0.0.1:8001/search";
+            string fastApiUrl = "http://127.0.0.1:8000/search";
 
             // Create the payload with optional filters
             var payload = new
@@ -423,23 +425,24 @@ namespace CompanyHubService.Services
 
                 // Step 3: Merge search results with service names
                 var enrichedResults = searchResults.Results
-                .Join(companies,
-                      r => Guid.TryParse(r.CompanyId, out var guid) ? guid : Guid.Empty,
-                      c => c.CompanyId,
-                      (r, c) => new
-                      {
-                          c.CompanyId,
-                          c.Name,
-                          c.Size,
-                          Location = c.Location,
-                          c.Description,
-                          Services = serviceMap.ContainsKey(c.CompanyId) ? serviceMap[c.CompanyId] : new List<string>(),
-                          r.Distance
-                      })
-                .ToList();
+                    .Join(companies,
+                          r => Guid.TryParse(r.CompanyId, out var guid) ? guid : Guid.Empty,
+                          c => c.CompanyId,
+                          (r, c) => new
+                          {
+                              c.CompanyId,
+                              c.Name,
+                              c.Size,
+                              c.Location,
+                              c.Description,
+                              r.Distance
+                          })
+                    .OrderByDescending(r => r.Distance)
+                    .ToList();
+                    
 
-
-                await analyticsService.InsertSearchQueryDataAsync(companyIds, searchQuery.searchQuery);
+                
+                await analyticsService.InsertSearchQueryDataAsync(companyIds, searchQuery.searchQuery, userId);
 
                 return JsonConvert.SerializeObject(new
                 {
