@@ -463,6 +463,51 @@ namespace CompanyHubService.Controllers
 
             return results;
         }
+
+        [HttpGet("GetProjectsOfCompany/{companyId}")]
+        public async Task<IActionResult> GetProjectsOfCompany(Guid companyId)
+        {
+            var projectCompanies = await dbContext.ProjectCompanies
+                .Where(pc => pc.ClientCompanyId == companyId || pc.ProviderCompanyId == companyId)
+                .Include(pc => pc.Project)
+                    .ThenInclude(p => p.ServiceProjects)
+                        .ThenInclude(sp => sp.Service)
+                .Include(pc => pc.ClientCompany)
+                .Include(pc => pc.ProviderCompany)
+                .ToListAsync();
+
+            var result = projectCompanies.Select(pc => new ProjectViewDTO
+            {
+                ProjectId = pc.Project.ProjectId,
+                ProjectName = pc.Project.ProjectName,
+                Description = pc.Project.Description,
+                TechnologiesUsed = pc.Project.TechnologiesUsed?.Split(", ").ToList() ?? new List<string>(),
+                ClientType = pc.Project.ClientType,
+                StartDate = pc.Project.StartDate,
+                CompletionDate = pc.Project.CompletionDate,
+                IsOnCompedia = pc.Project.IsOnCompedia,
+                IsCompleted = pc.Project.IsCompleted,
+                ProjectUrl = pc.Project.ProjectUrl,
+
+                ClientCompanyName = pc.IsClient == 0
+                    ? pc.OtherCompanyName
+                    : pc.ClientCompany?.CompanyName,
+
+                ProviderCompanyName = pc.IsClient == 1
+                    ? pc.OtherCompanyName
+                    : pc.ProviderCompany?.CompanyName,
+
+                Services = pc.Project.ServiceProjects.Select(sp => new ServiceDTO
+                {
+                    Id = sp.Service.Id,
+                    Name = sp.Service.Name
+                }).ToList()
+            }).ToList();
+
+            return Ok(result);
+        }
+
+
     }
 
 }
