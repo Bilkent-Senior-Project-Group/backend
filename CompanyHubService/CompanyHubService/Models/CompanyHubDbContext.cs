@@ -40,6 +40,9 @@ namespace CompanyHubService.Data
         public DbSet<ServiceCompany> ServiceCompanies { get; set; }
         public DbSet<ServiceProject> ServiceProjects { get; set; }
         public DbSet<CitiesAndCountries> CitiesAndCountries { get; set; }
+        public DbSet<ProfileView> ProfileViews { get; set; }
+        public DbSet<SearchQueryLog> SearchQueryLogs { get; set; }
+        
 
         // Configuring relationships and table properties
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -195,11 +198,58 @@ namespace CompanyHubService.Data
                 .HasForeignKey(sp => sp.ServiceId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // If your table name doesn't match the DbSet name, configure it:
-            modelBuilder.Entity<CitiesAndCountries>().ToTable("CitiesAndCountries");
+            modelBuilder.Entity<CitiesAndCountries>()
+                .ToTable("CitiesAndCountries", t => t.ExcludeFromMigrations());
+                
+            modelBuilder.Entity<CitiesAndCountries>()
+                .HasKey(c => c.ID);
+            // Configure the ProfileView entity
+            modelBuilder.Entity<ProfileView>()
+            .ToTable("ProfileViews", t => t.ExcludeFromMigrations());
 
-            // Configure any additional properties, keys, indexes, etc.
-            modelBuilder.Entity<CitiesAndCountries>().HasKey(c => c.ID);
+            // If you have relationship configurations for ProfileView, keep them if needed:
+            modelBuilder.Entity<ProfileView>()
+                .HasKey(pv => pv.Id);
+
+            modelBuilder.Entity<ProfileView>()
+                .Property(pv => pv.Id)
+                .ValueGeneratedOnAdd();
+
+            modelBuilder.Entity<ProfileView>()
+                .HasOne<User>()
+                .WithMany()
+                .HasForeignKey(pv => pv.VisitorUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ProfileView>()
+                .HasOne<Company>()
+                .WithMany()
+                .HasForeignKey(pv => pv.CompanyId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+
+            // Configure the SearchQueryLog entity
+            modelBuilder.Entity<SearchQueryLog>()
+                .HasKey(sq => sq.Id);
+            modelBuilder.Entity<SearchQueryLog>()
+                .HasOne<User>()
+                .WithMany()
+                .HasForeignKey(sq => sq.VisitorId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<SearchQueryLog>()
+                .Property(sq => sq.CompanyIds)
+                .HasConversion(
+                    v => string.Join(",", v), // Save: List<Guid> → CSV string
+                    v => string.IsNullOrEmpty(v)
+                    ? new List<Guid>()
+                    : v.Split(",", StringSplitOptions.RemoveEmptyEntries).Select(Guid.Parse).ToList()
+                );
+            modelBuilder.Entity<SearchQueryLog>()
+                .Property(sq => sq.QueryText)
+                .HasMaxLength(500); // Set a maximum length for the query text
+
         }
+
+        
     }
 }

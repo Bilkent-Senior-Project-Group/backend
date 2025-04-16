@@ -25,17 +25,23 @@ namespace CompanyHubService.Controllers
 
         private readonly CompanyHubDbContext dbContext;
 
-        private readonly BlobStorageService blobStorageService;
+        private readonly AnalyticsService analyticsService;
 
-        public CompanyController(IPdfExtractionService pdfExtractionService, CompanyService companyService, UserService userService, UserManager<User> userManager, CompanyHubDbContext dbContext, BlobStorageService blobStorageService)
+        private readonly BlobStorageService blobStorageService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+
+        public CompanyController(IPdfExtractionService pdfExtractionService, CompanyService companyService, UserService userService, UserManager<User> userManager, CompanyHubDbContext dbContext, BlobStorageService blobStorageService, AnalyticsService analyticsService, IHttpContextAccessor httpContextAccessor)
         {
+            _httpContextAccessor = httpContextAccessor;
             this.pdfExtractionService = pdfExtractionService;
             this.companyService = companyService;
             this.userService = userService;
             this.userManager = userManager;
             this.dbContext = dbContext;
             this.blobStorageService = blobStorageService;
+            this.analyticsService = analyticsService;
         }
+       
 
         [HttpPost("extract-from-pdf")]
         //[Authorize]
@@ -113,8 +119,8 @@ namespace CompanyHubService.Controllers
             return Ok(new { Message = "Company successfully created.", Data = companyDTO });
         }
 
-        [HttpGet("GetCompany/{companyName}")]
-        public async Task<IActionResult> GetCompany(string companyName)
+        [HttpGet("GetCompany/{companyName}/{userId}")]
+        public async Task<IActionResult> GetCompany(string companyName, string userId)
         {
             var company = await dbContext.Companies
                 .Where(c => c.CompanyName.Replace(" ", "") == companyName)
@@ -194,6 +200,15 @@ namespace CompanyHubService.Controllers
                 Services = services,
                 LogoUrl = company.LogoUrl,
             };
+            
+            await analyticsService.InsertProfileViewAsync(new ProfileViewDTO
+            {
+                VisitorUserId = User?.FindFirstValue(ClaimTypes.NameIdentifier),
+                CompanyId = company.CompanyId,
+                ViewDate = DateTime.UtcNow,
+                FromWhere = 0
+            });
+
 
             return Ok(companyDTO);
         }
@@ -248,6 +263,8 @@ namespace CompanyHubService.Controllers
                 return Unauthorized(new { Message = "You are not authorized to view the users of this company." });
             }
 
+            
+            
             var users = await companyService.GetUsersOfCompanyAsync(companyId);
 
             if (users == null || !users.Any())
@@ -327,9 +344,15 @@ namespace CompanyHubService.Controllers
             {
                 return BadRequest(new { Message = "Empty search" });
             }
+            var currentUserId = User?.FindFirstValue(ClaimTypes.NameIdentifier);
 
+            Console.WriteLine($"Current User ID: {currentUserId}");
+
+
+            
             // Get the raw JSON string from the service
-            string rawJsonResult = await companyService.FreeTextSearchAsync(textQuery);
+            string rawJsonResult = await companyService.FreeTextSearchAsync(textQuery, currentUserId);
+
 
 
             // Return it as ContentResult with proper content type
