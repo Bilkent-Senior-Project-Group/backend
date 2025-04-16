@@ -10,6 +10,8 @@ using Newtonsoft.Json;
 using System.Text;
 using Newtonsoft.Json.Linq;
 using iText.Commons.Actions.Contexts;
+using iText.Kernel.Colors;
+using System.Security.Claims;
 
 namespace CompanyHubService.Services
 {
@@ -19,13 +21,15 @@ namespace CompanyHubService.Services
         private UserService userService { get; set; }
         private readonly IProducer<string, string> _kafkaProducer;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly AnalyticsService analyticsService;
 
-        public CompanyService(CompanyHubDbContext dbContext, UserService userService, IProducer<string, string> kafkaProducer, IHttpClientFactory httpClientFactory)
+        public CompanyService(CompanyHubDbContext dbContext, UserService userService, IProducer<string, string> kafkaProducer, IHttpClientFactory httpClientFactory, AnalyticsService analyticsService)
         {
             _dbContext = dbContext;
             this.userService = userService;
             _kafkaProducer = kafkaProducer;
             _httpClientFactory = httpClientFactory;
+            this.analyticsService = analyticsService;
         }
 
         public async Task<bool> CreateCompanyAsync(CreateCompanyRequestDTO request, string userId)
@@ -353,9 +357,9 @@ namespace CompanyHubService.Services
             return companies;
         }
 
-        public async Task<string> FreeTextSearchAsync(FreeTextSearchDTO searchQuery)
+        public async Task<string> FreeTextSearchAsync(FreeTextSearchDTO searchQuery, string? userId)
         {
-            string fastApiUrl = "http://127.0.0.1:8001/search";
+            string fastApiUrl = "http://127.0.0.1:8000/search";
 
             // Create the payload with optional filters
             var payload = new
@@ -404,7 +408,6 @@ namespace CompanyHubService.Services
                           })
                     .ToListAsync();
 
-
                 // Step 2: Fetch service names per company
                 var serviceMap = await _dbContext.ServiceCompanies
                     .Where(sc => companyIds.Contains(sc.CompanyId))
@@ -433,6 +436,8 @@ namespace CompanyHubService.Services
                 .ToList();
 
 
+                await analyticsService.InsertSearchQueryDataAsync(companyIds, searchQuery.searchQuery, userId);
+              
                 return JsonConvert.SerializeObject(new
                 {
                     query = searchResults.Query,

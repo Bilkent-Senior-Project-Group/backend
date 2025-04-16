@@ -4,6 +4,7 @@ using CompanyHubService.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CompanyHubService.Migrations
 {
     [DbContext(typeof(CompanyHubDbContext))]
-    partial class CompanyHubDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250414185413_ExcludeProfileViewsFromMigrations")]
+    partial class ExcludeProfileViewsFromMigrations
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -95,7 +98,10 @@ namespace CompanyHubService.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("CitiesAndCountries", (string)null);
+                    b.ToTable("CitiesAndCountries", null, t =>
+                        {
+                            t.ExcludeFromMigrations();
+                        });
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.Company", b =>
@@ -103,9 +109,6 @@ namespace CompanyHubService.Migrations
                     b.Property<Guid>("CompanyId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<bool>("AddedOnPage")
-                        .HasColumnType("bit");
 
                     b.Property<string>("Address")
                         .IsRequired()
@@ -248,8 +251,7 @@ namespace CompanyHubService.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("ProductClients", (string)null);
-
+                    b.ToTable("ProductClients");
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.ProfileView", b =>
@@ -398,7 +400,7 @@ namespace CompanyHubService.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Reviews", (string)null);
+                    b.ToTable("Reviews");
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.SearchQueryLog", b =>
@@ -557,9 +559,6 @@ namespace CompanyHubService.Migrations
 
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("bit");
-
-                    b.Property<string>("PhotoUrl")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
