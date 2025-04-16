@@ -122,6 +122,7 @@ public class AccountController : ControllerBase
             {
                 Id = user.Id,
                 FirstName = user.FirstName,
+                UserName = user.UserName,
                 LastName = user.LastName,
                 Email = user.Email,
                 PhoneNumber = user.PhoneNumber,
@@ -134,6 +135,7 @@ public class AccountController : ControllerBase
             userDTO = new UserDTO
             {
                 Id = user.Id,
+                UserName = user.UserName,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 Email = user.Email,
