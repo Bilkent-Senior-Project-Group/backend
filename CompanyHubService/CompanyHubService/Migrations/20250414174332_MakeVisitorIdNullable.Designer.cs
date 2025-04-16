@@ -4,6 +4,7 @@ using CompanyHubService.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CompanyHubService.Migrations
 {
     [DbContext(typeof(CompanyHubDbContext))]
-    partial class CompanyHubDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250414174332_MakeVisitorIdNullable")]
+    partial class MakeVisitorIdNullable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -76,26 +79,7 @@ namespace CompanyHubService.Migrations
 
                     b.HasIndex("ProviderCompanyId");
 
-                    b.ToTable("ProjectRequests", (string)null);
-                });
-
-            modelBuilder.Entity("CompanyHubService.Models.CitiesAndCountries", b =>
-                {
-                    b.Property<int>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
-
-                    b.Property<string>("City")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Country")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("ID");
-
-                    b.ToTable("CitiesAndCountries", (string)null);
+                    b.ToTable("ProjectRequests");
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.CitiesAndCountries", b =>
@@ -172,7 +156,7 @@ namespace CompanyHubService.Migrations
 
                     b.HasKey("CompanyId");
 
-                    b.ToTable("Companies", (string)null);
+                    b.ToTable("Companies");
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.Industry", b =>
@@ -187,7 +171,7 @@ namespace CompanyHubService.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Industries", (string)null);
+                    b.ToTable("Industries");
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.Notification", b =>
@@ -220,7 +204,7 @@ namespace CompanyHubService.Migrations
 
                     b.HasKey("NotificationId");
 
-                    b.ToTable("Notifications", (string)null);
+                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.Product", b =>
@@ -244,7 +228,7 @@ namespace CompanyHubService.Migrations
 
                     b.HasIndex("CompanyId");
 
-                    b.ToTable("Products", (string)null);
+                    b.ToTable("Products");
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.ProductClient", b =>
@@ -267,16 +251,13 @@ namespace CompanyHubService.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("ProductClients", (string)null);
+                    b.ToTable("ProductClients");
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.ProfileView", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<Guid>("CompanyId")
                         .HasColumnType("uniqueidentifier");
@@ -288,7 +269,6 @@ namespace CompanyHubService.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("VisitorUserId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
@@ -297,10 +277,7 @@ namespace CompanyHubService.Migrations
 
                     b.HasIndex("VisitorUserId");
 
-                    b.ToTable("ProfileViews", null, t =>
-                        {
-                            t.ExcludeFromMigrations();
-                        });
+                    b.ToTable("ProfileViews");
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.Project", b =>
@@ -353,7 +330,7 @@ namespace CompanyHubService.Migrations
 
                     b.HasIndex("CompanyId");
 
-                    b.ToTable("Projects", (string)null);
+                    b.ToTable("Projects");
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.ProjectCompany", b =>
@@ -379,7 +356,7 @@ namespace CompanyHubService.Migrations
 
                     b.HasIndex("ProviderCompanyId");
 
-                    b.ToTable("ProjectCompanies", (string)null);
+                    b.ToTable("ProjectCompanies");
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.Review", b =>
@@ -416,7 +393,7 @@ namespace CompanyHubService.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Reviews", (string)null);
+                    b.ToTable("Reviews");
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.SearchQueryLog", b =>
@@ -466,7 +443,7 @@ namespace CompanyHubService.Migrations
 
                     b.HasIndex("IndustryId");
 
-                    b.ToTable("Services", (string)null);
+                    b.ToTable("Services");
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.ServiceCompany", b =>
@@ -497,7 +474,7 @@ namespace CompanyHubService.Migrations
 
                     b.HasIndex("ServiceId");
 
-                    b.ToTable("ServiceCompanies", (string)null);
+                    b.ToTable("ServiceCompanies");
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.ServiceProject", b =>
@@ -520,7 +497,7 @@ namespace CompanyHubService.Migrations
 
                     b.HasIndex("ServiceId");
 
-                    b.ToTable("ServiceProjects", (string)null);
+                    b.ToTable("ServiceProjects");
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.User", b =>
@@ -576,9 +553,6 @@ namespace CompanyHubService.Migrations
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("bit");
 
-                    b.Property<string>("PhotoUrl")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
 
@@ -629,7 +603,7 @@ namespace CompanyHubService.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserCompanies", (string)null);
+                    b.ToTable("UserCompanies");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -845,8 +819,7 @@ namespace CompanyHubService.Migrations
                     b.HasOne("CompanyHubService.Models.User", null)
                         .WithMany()
                         .HasForeignKey("VisitorUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("CompanyHubService.Models.Project", b =>

@@ -205,17 +205,28 @@ namespace CompanyHubService.Data
                 .HasKey(c => c.ID);
             // Configure the ProfileView entity
             modelBuilder.Entity<ProfileView>()
+            .ToTable("ProfileViews", t => t.ExcludeFromMigrations());
+
+            // If you have relationship configurations for ProfileView, keep them if needed:
+            modelBuilder.Entity<ProfileView>()
                 .HasKey(pv => pv.Id);
+
+            modelBuilder.Entity<ProfileView>()
+                .Property(pv => pv.Id)
+                .ValueGeneratedOnAdd();
+
             modelBuilder.Entity<ProfileView>()
                 .HasOne<User>()
                 .WithMany()
                 .HasForeignKey(pv => pv.VisitorUserId)
                 .OnDelete(DeleteBehavior.Restrict);
+
             modelBuilder.Entity<ProfileView>()
                 .HasOne<Company>()
                 .WithMany()
                 .HasForeignKey(pv => pv.CompanyId)
                 .OnDelete(DeleteBehavior.Restrict);
+
 
             // Configure the SearchQueryLog entity
             modelBuilder.Entity<SearchQueryLog>()
@@ -238,5 +249,7 @@ namespace CompanyHubService.Data
                 .HasMaxLength(500); // Set a maximum length for the query text
 
         }
+
+        
     }
 }
