@@ -42,7 +42,7 @@ namespace CompanyHubService.Data
         public DbSet<CitiesAndCountries> CitiesAndCountries { get; set; }
         public DbSet<ProfileView> ProfileViews { get; set; }
         public DbSet<SearchQueryLog> SearchQueryLogs { get; set; }
-        
+
 
         // Configuring relationships and table properties
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -140,7 +140,7 @@ namespace CompanyHubService.Data
                     ? new List<Guid>()
                     : v.Split(",", StringSplitOptions.RemoveEmptyEntries).Select(Guid.Parse).ToList()
             );
-            
+
             // Configure relationships if needed
             modelBuilder.Entity<Review>()
                 .HasOne(r => r.Project)
@@ -166,13 +166,12 @@ namespace CompanyHubService.Data
                 .WithMany()
                 .HasForeignKey(s => s.IndustryId);
 
-            // ServiceCompany configuration
             modelBuilder.Entity<ServiceCompany>()
                 .HasKey(sc => sc.Id);
 
             modelBuilder.Entity<ServiceCompany>()
                 .HasOne(sc => sc.Company)
-                .WithMany()
+                .WithMany(c => c.ServiceCompanies)
                 .HasForeignKey(sc => sc.CompanyId)
                 .OnDelete(DeleteBehavior.Cascade);
 
@@ -181,6 +180,7 @@ namespace CompanyHubService.Data
                 .WithMany()
                 .HasForeignKey(sc => sc.ServiceId)
                 .OnDelete(DeleteBehavior.Cascade);
+
 
             // ServiceProject configuration
             modelBuilder.Entity<ServiceProject>()
@@ -200,7 +200,7 @@ namespace CompanyHubService.Data
 
             modelBuilder.Entity<CitiesAndCountries>()
                 .ToTable("CitiesAndCountries", t => t.ExcludeFromMigrations());
-                
+
             modelBuilder.Entity<CitiesAndCountries>()
                 .HasKey(c => c.ID);
             // Configure the ProfileView entity
@@ -250,6 +250,6 @@ namespace CompanyHubService.Data
 
         }
 
-        
+
     }
 }

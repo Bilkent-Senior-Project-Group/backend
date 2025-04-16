@@ -12,6 +12,7 @@ using Newtonsoft.Json.Linq;
 using iText.Commons.Actions.Contexts;
 using iText.Kernel.Colors;
 using System.Security.Claims;
+using System.Text.Json.Serialization;
 
 namespace CompanyHubService.Services
 {
@@ -52,11 +53,20 @@ namespace CompanyHubService.Services
             };
 
             // Create ServiceCompany mappings
-            var serviceCompanies = request.Services.Select(item => new ServiceCompany
-            {
-                CompanyId = company.CompanyId,
-                ServiceId = item,
-            }).ToList();
+            var serviceCount = request.Services.Count;
+            var basePercentage = serviceCount > 0 ? 100 / serviceCount : 0;
+            var remainder = 100 % serviceCount;
+
+            var serviceCompanies = request.Services
+                .Select((item, index) => new ServiceCompany
+                {
+                    CompanyId = company.CompanyId,
+                    ServiceId = item,
+                    Percentage = basePercentage + (index < remainder ? 1 : 0)
+                })
+                .ToList();
+
+
 
             // Add the company and service mappings to the DbContext
             _dbContext.Companies.Add(company);
@@ -286,6 +296,28 @@ namespace CompanyHubService.Services
 
                 await _dbContext.SaveChangesAsync();
 
+                if (companyProfileDTO.Services != null && companyProfileDTO.Services.Any())
+                {
+                    // 1. Remove all existing service mappings for this company
+                    var oldMappings = await _dbContext.ServiceCompanies
+                        .Where(sc => sc.CompanyId == company.CompanyId)
+                        .ToListAsync();
+
+                    _dbContext.ServiceCompanies.RemoveRange(oldMappings);
+
+                    // 2. Add new service mappings
+                    var newMappings = companyProfileDTO.Services.Select(dto => new ServiceCompany
+                    {
+                        CompanyId = company.CompanyId,
+                        ServiceId = dto.Id,
+                        Percentage = dto.Percentage
+                    }).ToList();
+
+                    await _dbContext.ServiceCompanies.AddRangeAsync(newMappings);
+
+                    // 3. Save all changes
+                    await _dbContext.SaveChangesAsync();
+                }
 
                 // Create the DTO with only the fields we want to send
                 var companyKafkaDTO = new CompanyKafkaDTO
@@ -303,7 +335,14 @@ namespace CompanyHubService.Services
                 };
 
                 // Serialize the DTO to JSON
-                var messageValue = System.Text.Json.JsonSerializer.Serialize(companyKafkaDTO);
+                var messageValue = System.Text.Json.JsonSerializer.Serialize(
+                companyKafkaDTO,
+                new JsonSerializerOptions
+                {
+                    ReferenceHandler = ReferenceHandler.IgnoreCycles,
+                    WriteIndented = false
+                });
+
 
                 // Create the Kafka message
                 var message = new Message<string, string>
@@ -437,7 +476,7 @@ namespace CompanyHubService.Services
 
 
                 await analyticsService.InsertSearchQueryDataAsync(companyIds, searchQuery.searchQuery, userId);
-              
+
                 return JsonConvert.SerializeObject(new
                 {
                     query = searchResults.Query,

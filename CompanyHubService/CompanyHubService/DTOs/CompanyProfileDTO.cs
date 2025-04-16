@@ -45,12 +45,12 @@ namespace CompanyHubService.DTOs
 
         // [Required]
         // [JsonPropertyName("contact_info")]  // Ensure correct mapping
-        public string Phone { get; set; } = "Unknown"; // Default to "Unknown"
+        public string Phone { get; set; }
 
-        public string Email { get; set; } = "Unknown"; // Default to "Unknown"
+        public string Email { get; set; }
 
         // [Required]
-        public string Address { get; set; } = "Unknown"; // Default to "Unknown"
+        public string Address { get; set; }
 
         public string LogoUrl { get; set; } = "https://azurelogo.blob.core.windows.net/profile-photos/defaultcompany.png"; // Default logo URL
 

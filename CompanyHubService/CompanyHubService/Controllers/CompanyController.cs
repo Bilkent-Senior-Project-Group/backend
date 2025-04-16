@@ -41,7 +41,7 @@ namespace CompanyHubService.Controllers
             this.blobStorageService = blobStorageService;
             this.analyticsService = analyticsService;
         }
-       
+
 
         [HttpPost("extract-from-pdf")]
         //[Authorize]
@@ -119,8 +119,8 @@ namespace CompanyHubService.Controllers
             return Ok(new { Message = "Company successfully created.", Data = companyDTO });
         }
 
-        [HttpGet("GetCompany/{companyName}/{userId}")]
-        public async Task<IActionResult> GetCompany(string companyName, string userId)
+        [HttpGet("GetCompany/{companyName}")]
+        public async Task<IActionResult> GetCompany(string companyName)
         {
             var company = await dbContext.Companies
                 .Where(c => c.CompanyName.Replace(" ", "") == companyName)
@@ -215,7 +215,7 @@ namespace CompanyHubService.Controllers
                 LogoUrl = company.LogoUrl,
                 TotalReviews = totalReviewsAsProvider
             };
-            
+
             await analyticsService.InsertProfileViewAsync(new ProfileViewDTO
             {
                 VisitorUserId = User?.FindFirstValue(ClaimTypes.NameIdentifier),
@@ -269,8 +269,8 @@ namespace CompanyHubService.Controllers
                 return Unauthorized(new { Message = "You are not authorized to view the users of this company." });
             }
 
-            
-            
+
+
             var users = await companyService.GetUsersOfCompanyAsync(companyId);
 
             if (users == null || !users.Any())
@@ -361,7 +361,7 @@ namespace CompanyHubService.Controllers
             Console.WriteLine($"Current User ID: {currentUserId}");
 
 
-            
+
             // Get the raw JSON string from the service
             string rawJsonResult = await companyService.FreeTextSearchAsync(textQuery, currentUserId);
 
