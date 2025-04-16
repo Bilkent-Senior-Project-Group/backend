@@ -47,11 +47,11 @@ namespace CompanyHubService.Controllers
             return Ok(users);
         }
 
-        [HttpGet("GetUserProfileById/{userId}")]
+        [HttpGet("GetUserProfileByUsername/{username}")]
         [Authorize]
-        public async Task<IActionResult> GetUserProfileById(string userId)
+        public async Task<IActionResult> GetUserProfileByUsername(string username)
         {
-            var user = await userManager.FindByIdAsync(userId);
+            var user = await userManager.FindByNameAsync(username);
             if (user == null)
                 return NotFound(new { Message = "User not found." });
 
@@ -66,7 +66,6 @@ namespace CompanyHubService.Controllers
 
             return Ok(profile);
         }
-
 
         [HttpGet("GetUserCompanies")]
         [Authorize]
