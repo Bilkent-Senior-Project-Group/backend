@@ -266,7 +266,9 @@ public class AccountController : ControllerBase
             return NotFound("User not found.");
         }
 
-        var result = await _userManager.ConfirmEmailAsync(user, request.Token);
+        var decodedToken = Uri.UnescapeDataString(request.Token);
+
+        var result = await _userManager.ConfirmEmailAsync(user, decodedToken);
         if (result.Succeeded)
         {
             if (await _userManager.IsInRoleAsync(user, "User"))

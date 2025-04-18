@@ -21,6 +21,12 @@ namespace CompanyHubService.Models
         // Set default value to https://azurelogo.blob.core.windows.net/profile-photos/defaultuser.jpg
         public string? PhotoUrl { get; set; } = "https://azurelogo.blob.core.windows.net/profile-photos/defaultuser.jpg";
 
+        public string? Bio { get; set; }
+
+        public string? Position { get; set; }
+
+        public string? LinkedInUrl { get; set; }
+
         public ICollection<Review> Reviews { get; set; } = new List<Review>();
 
     }

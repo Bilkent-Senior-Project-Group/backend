@@ -7,6 +7,12 @@ namespace CompanyHubService.DTOs
         public string PhotoUrl { get; set; }
         public string PhoneNumber { get; set; }
         public string UserName { get; set; }
+
+        public string? Bio { get; set; }
+
+        public string? Position { get; set; }
+
+        public string? LinkedInUrl { get; set; }
     }
 
 }

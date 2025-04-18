@@ -62,7 +62,10 @@ namespace CompanyHubService.Controllers
                 LastName = user.LastName,
                 PhotoUrl = user.PhotoUrl,
                 PhoneNumber = user.PhoneNumber,
-                UserName = user.UserName
+                UserName = user.UserName,
+                Bio = user.Bio,
+                Position = user.Position,
+                LinkedInUrl = user.LinkedInUrl
             };
 
             return Ok(profile);
@@ -112,6 +115,9 @@ namespace CompanyHubService.Controllers
             user.FirstName = dto.FirstName ?? user.FirstName;
             user.LastName = dto.LastName ?? user.LastName;
             user.PhoneNumber = dto.PhoneNumber ?? user.PhoneNumber;
+            user.Bio = dto.Bio ?? user.Bio;
+            user.Position = dto.Position ?? user.Position;
+            user.LinkedInUrl = dto.LinkedInUrl ?? user.LinkedInUrl;
 
             var result = await userManager.UpdateAsync(user);
             if (!result.Succeeded)
