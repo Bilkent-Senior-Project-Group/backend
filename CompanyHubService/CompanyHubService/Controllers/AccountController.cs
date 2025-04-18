@@ -206,7 +206,8 @@ public class AccountController : ControllerBase
 
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
         // HERE WE SHOULD PASS THE LINK FOR THE RESET PASSWORD APGE
-        var resetLink = $"{Request.Scheme}://{Request.Host}/reset-password?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(user.Email)}";
+        var resetLink = $"https://localhost:3000/reset-password?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(user.Email)}";
+
 
         //LATER DELETE THE TOKEN FROM EMAIL BODY 
         string emailBody = $@"
@@ -240,7 +241,9 @@ public class AccountController : ControllerBase
             return BadRequest(new { message = "User not found." });
         }
 
-        var resetResult = await _userManager.ResetPasswordAsync(user, model.Token, model.NewPassword);
+        var decodedToken = Uri.UnescapeDataString(model.Token);
+
+        var resetResult = await _userManager.ResetPasswordAsync(user, decodedToken, model.NewPassword);
         if (!resetResult.Succeeded)
         {
             return BadRequest(new { message = "Password reset failed.", errors = resetResult.Errors });
