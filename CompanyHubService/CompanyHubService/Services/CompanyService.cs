@@ -272,6 +272,20 @@ namespace CompanyHubService.Services
                     return false;
                 }
 
+                if (!string.IsNullOrWhiteSpace(companyProfileDTO.Name))
+                {
+                    var isNameTaken = await _dbContext.Companies
+                        .AnyAsync(c => c.CompanyName == companyProfileDTO.Name && c.CompanyId != company.CompanyId);
+
+                    if (isNameTaken)
+                    {
+                        Console.WriteLine($"Company name '{companyProfileDTO.Name}' is already taken by another company.");
+                        return false; // Return false or handle the error as needed
+                    }
+                    company.CompanyName = companyProfileDTO.Name;
+                }
+                    
+
                 if (!string.IsNullOrWhiteSpace(companyProfileDTO.Description))
                     company.Description = companyProfileDTO.Description;
 
