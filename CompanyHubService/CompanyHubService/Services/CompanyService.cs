@@ -52,21 +52,23 @@ namespace CompanyHubService.Services
                 AddedOnPage = request.AddedOnPage
             };
 
-            // Create ServiceCompany mappings
-            var serviceCount = request.Services.Count;
-            var basePercentage = serviceCount > 0 ? 100 / serviceCount : 0;
-            var remainder = 100 % serviceCount;
+            var serviceCompanies = new List<ServiceCompany>();
 
-            var serviceCompanies = request.Services
-                .Select((item, index) => new ServiceCompany
-                {
-                    CompanyId = company.CompanyId,
-                    ServiceId = item,
-                    Percentage = basePercentage + (index < remainder ? 1 : 0)
-                })
-                .ToList();
+            if (request.Services != null && request.Services.Any())
+            {
+                var serviceCount = request.Services.Count;
+                var basePercentage = 100 / serviceCount;
+                var remainder = 100 % serviceCount;
 
-
+                serviceCompanies = request.Services
+                    .Select((item, index) => new ServiceCompany
+                    {
+                        CompanyId = company.CompanyId,
+                        ServiceId = item,
+                        Percentage = basePercentage + (index < remainder ? 1 : 0)
+                    })
+                    .ToList();
+            }
 
             // Add the company and service mappings to the DbContext
             _dbContext.Companies.Add(company);

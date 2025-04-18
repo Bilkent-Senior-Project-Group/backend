@@ -392,22 +392,26 @@ namespace CompanyHubService.Controllers
             return Ok(new { Message = "Logo uploaded successfully.", LogoUrl = logoUrl });
         }
 
-        // Update this method in such a way that only the root user of the company should be able to delete logo.
         [HttpDelete("DeleteLogo/{companyId}")]
+        [Authorize(Roles = "Root")]
         public async Task<IActionResult> DeleteCompanyLogo(Guid companyId)
         {
             var company = await dbContext.Companies.FindAsync(companyId);
-            if (company == null || string.IsNullOrEmpty(company.LogoUrl))
-                return NotFound("Logo not found.");
+            if (company == null)
+                return NotFound("Company not found.");
 
-            var fileName = company.LogoUrl.Split('/').Last(); // Extract file name
-            await blobStorageService.DeleteLogoAsync(fileName);
+            var defaultLogoUrl = "https://azurelogo.blob.core.windows.net/company-logos/defaultcompany.png";
 
-            company.LogoUrl = "https://azurelogo.blob.core.windows.net/company-logos/defaultcompany.png";
+            // If logo is already the default one, don't proceed
+            if (company.LogoUrl == defaultLogoUrl)
+                return BadRequest(new { Message = "Company already has the default logo." });
+
+            company.LogoUrl = defaultLogoUrl;
             await dbContext.SaveChangesAsync();
 
-            return Ok(new { Message = "Logo deleted successfully." });
+            return Ok(new { Message = "Logo reset to default." });
         }
+
 
         [HttpGet("SearchCompaniesByName")]
         public async Task<IActionResult> SearchCompaniesByName([FromQuery] string query)
