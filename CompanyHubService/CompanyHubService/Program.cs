@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.OpenApi.Models;
 using Azure.Storage.Blobs;
+using CompanyHubService.Hubs;
 
 
 
@@ -114,10 +115,11 @@ builder.Services.AddScoped<AnalyticsService>();
 builder.Services.AddSingleton(new BlobServiceClient(
     builder.Configuration["AzureBlobStorage:ConnectionString"]
 ));
-
-
-
-
+builder.Services.AddSignalR()
+    .AddJsonProtocol(options =>
+    {
+        options.PayloadSerializerOptions.PropertyNamingPolicy = null;
+    });
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -199,5 +201,6 @@ app.UseAuthorization();
 
 
 app.MapControllers();
+app.MapHub<NotificationHub>("/hubs/notification");
 
 app.Run();

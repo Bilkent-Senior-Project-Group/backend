@@ -1,15 +1,19 @@
 using CompanyHubService.Data;
+using CompanyHubService.Hubs;
 using CompanyHubService.Models;
 using CompanyHubService.Services;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
 public class NotificationService
 {
     private readonly CompanyHubDbContext _dbContext;
+    private readonly IHubContext<NotificationHub> _hubContext;
 
-    public NotificationService(CompanyHubDbContext dbContext, EmailService emailService)
+    public NotificationService(CompanyHubDbContext dbContext, IHubContext<NotificationHub> hubContext)
     {
         _dbContext = dbContext;
+        _hubContext = hubContext;
     }
 
     public async Task CreateNotificationAsync(string recipientId, string message, string notificationType, string url)
@@ -24,6 +28,16 @@ public class NotificationService
 
         _dbContext.Notifications.Add(notification);
         await _dbContext.SaveChangesAsync();
+
+        await _hubContext.Clients.User(recipientId)
+        .SendAsync("ReceiveNotification", new
+        {
+            notification.NotificationId,
+            notification.Message,
+            notification.NotificationType,
+            notification.Url,
+            notification.CreatedAt
+        });
     }
 
     // Optional: Get unread notifications for a user
