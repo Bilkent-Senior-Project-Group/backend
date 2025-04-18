@@ -375,6 +375,7 @@ namespace CompanyHubService.Services
                     Id = uc.User.Id,
                     FirstName = uc.User.FirstName,
                     LastName = uc.User.LastName,
+                    UserName = uc.User.UserName,
                     Email = uc.User.Email,
                     PhoneNumber = uc.User.PhoneNumber,
                 })
