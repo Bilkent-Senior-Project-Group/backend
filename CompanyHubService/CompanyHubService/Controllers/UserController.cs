@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
 
 namespace CompanyHubService.Controllers
@@ -159,6 +160,74 @@ namespace CompanyHubService.Controllers
                 Console.WriteLine($"❌ Blob upload failed: {ex.Message}");
                 return StatusCode(500, new { message = "Internal error uploading photo." });
             }
+        }
+
+        [HttpPost("AcceptInvitation")]
+        [Authorize]
+        public async Task<IActionResult> AcceptInvitation([FromBody] Guid invitationId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            var invitation = await dbContext.CompanyInvitations
+                .FirstOrDefaultAsync(i => i.InvitationId == invitationId && i.UserId == userId && !i.Accepted && !i.Rejected);
+
+            if (invitation == null)
+                return BadRequest(new { Message = "Invitation not found or already processed." });
+
+            // Add user to company
+            dbContext.UserCompanies.Add(new UserCompany
+            {
+                UserId = userId,
+                CompanyId = invitation.CompanyId
+            });
+
+            // Mark invitation as accepted
+            invitation.Accepted = true;
+
+            await dbContext.SaveChangesAsync();
+
+            return Ok(new { Message = "Invitation accepted. You have been added to the company." });
+        }
+
+        [HttpPost("RejectInvitation")]
+        [Authorize]
+        public async Task<IActionResult> RejectInvitation([FromBody] Guid invitationId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            var invitation = await dbContext.CompanyInvitations
+                .FirstOrDefaultAsync(i => i.InvitationId == invitationId && i.UserId == userId && !i.Accepted && !i.Rejected);
+
+            if (invitation == null)
+                return BadRequest(new { Message = "Invitation not found or already processed." });
+
+            // Mark as rejected
+            invitation.Rejected = true;
+
+            await dbContext.SaveChangesAsync();
+
+            return Ok(new { Message = "Invitation rejected." });
+        }
+
+        [HttpGet("MyInvitations")]
+        [Authorize]
+        public async Task<IActionResult> GetMyInvitations()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            var invitations = await dbContext.CompanyInvitations
+                .Where(i => i.UserId == userId && !i.Accepted && !i.Rejected)
+                .Include(i => i.Company)
+                .Select(i => new
+                {
+                    i.InvitationId,
+                    i.SentAt,
+                    i.CompanyId,
+                    CompanyName = i.Company.CompanyName
+                })
+                .ToListAsync();
+
+            return Ok(invitations);
         }
 
 

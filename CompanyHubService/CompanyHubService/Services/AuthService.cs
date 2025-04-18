@@ -1,4 +1,5 @@
-﻿using CompanyHubService.Models;
+﻿using CompanyHubService.Data;
+using CompanyHubService.Models;
 using CompanyHubService.Services;
 using CompanyHubService.Views;
 using Microsoft.AspNetCore.Identity;
@@ -21,13 +22,16 @@ public class AuthService
     private readonly EmailService _emailService;
     private readonly IConfiguration _configuration;
 
-    public AuthService(UserManager<User> userManager, SignInManager<User> signInManager, RoleManager<IdentityRole> roleManager, EmailService emailService, IConfiguration configuration)
+    private readonly CompanyHubDbContext _dbContext;
+
+    public AuthService(UserManager<User> userManager, SignInManager<User> signInManager, RoleManager<IdentityRole> roleManager, EmailService emailService, IConfiguration configuration, CompanyHubDbContext dbContext)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _roleManager = roleManager;
         _emailService = emailService;
         _configuration = configuration;
+        _dbContext = dbContext;
     }
 
     public async Task<IdentityResult> RegisterUserAsync(RegisterViewModel model)
@@ -58,6 +62,17 @@ public class AuthService
         if (!result.Succeeded)
         {
             return result;
+        }
+
+        if (result.Succeeded && model.CompanyId.HasValue)
+        {
+            _dbContext.UserCompanies.Add(new UserCompany
+            {
+                UserId = user.Id,
+                CompanyId = model.CompanyId.Value
+            });
+
+            await _dbContext.SaveChangesAsync();
         }
 
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
@@ -91,8 +106,6 @@ public class AuthService
 
 
         return roleResult;
-
-
     }
 
 

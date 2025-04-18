@@ -42,6 +42,8 @@ namespace CompanyHubService.Data
         public DbSet<CitiesAndCountries> CitiesAndCountries { get; set; }
         public DbSet<ProfileView> ProfileViews { get; set; }
         public DbSet<SearchQueryLog> SearchQueryLogs { get; set; }
+        public DbSet<CompanyInvitation> CompanyInvitations { get; set; }
+
 
 
         // Configuring relationships and table properties

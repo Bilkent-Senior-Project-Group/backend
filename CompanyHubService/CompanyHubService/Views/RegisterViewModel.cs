@@ -25,6 +25,7 @@ namespace CompanyHubService.Views
         [RegularExpression(@"^[a-zA-Z0-9]+$", ErrorMessage = "Username can only contain letters and numbers.")]
         public String Username { get; set; }
 
+        public Guid? CompanyId { get; set; } // for invite registration it is optional
 
     }
 }

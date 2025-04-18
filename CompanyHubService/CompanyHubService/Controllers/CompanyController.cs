@@ -30,7 +30,11 @@ namespace CompanyHubService.Controllers
         private readonly BlobStorageService blobStorageService;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public CompanyController(IPdfExtractionService pdfExtractionService, CompanyService companyService, UserService userService, UserManager<User> userManager, CompanyHubDbContext dbContext, BlobStorageService blobStorageService, AnalyticsService analyticsService, IHttpContextAccessor httpContextAccessor)
+        private readonly NotificationService notificationService;
+
+        private readonly EmailService emailService;
+
+        public CompanyController(IPdfExtractionService pdfExtractionService, CompanyService companyService, UserService userService, UserManager<User> userManager, CompanyHubDbContext dbContext, BlobStorageService blobStorageService, AnalyticsService analyticsService, IHttpContextAccessor httpContextAccessor, NotificationService notificationService, EmailService emailService)
         {
             _httpContextAccessor = httpContextAccessor;
             this.pdfExtractionService = pdfExtractionService;
@@ -40,6 +44,8 @@ namespace CompanyHubService.Controllers
             this.dbContext = dbContext;
             this.blobStorageService = blobStorageService;
             this.analyticsService = analyticsService;
+            this.notificationService = notificationService;
+            this.emailService = emailService;
         }
 
 
@@ -511,7 +517,70 @@ namespace CompanyHubService.Controllers
             return Ok(result);
         }
 
+        [HttpPost("InviteUser")]
+        [Authorize(Roles = "Root, Admin")]
+        public async Task<IActionResult> InviteUser([FromBody] InviteUserDTO request)
+        {
+            var existingUser = await userManager.FindByEmailAsync(request.Email);
+
+            if (existingUser != null)
+            {
+                // Check if user is already part of the company
+                bool alreadyLinked = await dbContext.UserCompanies
+                    .AnyAsync(uc => uc.UserId == existingUser.Id && uc.CompanyId == request.CompanyId);
+
+                if (alreadyLinked)
+                {
+                    return BadRequest(new { Message = "User is already part of the company." });
+                }
+
+                // Check if an active invitation already exists
+                bool alreadyInvited = await dbContext.CompanyInvitations
+                    .AnyAsync(inv => inv.UserId == existingUser.Id && inv.CompanyId == request.CompanyId && !inv.Accepted && !inv.Rejected);
+
+                if (alreadyInvited)
+                {
+                    return BadRequest(new { Message = "An invitation is already pending for this user." });
+                }
+
+                // Save invitation
+                var invitation = new CompanyInvitation
+                {
+                    CompanyId = request.CompanyId,
+                    UserId = existingUser.Id
+                };
+
+                dbContext.CompanyInvitations.Add(invitation);
+                await dbContext.SaveChangesAsync();
+
+                // Notify the user
+                await notificationService.CreateNotificationAsync(
+                    recipientId: existingUser.Id,
+                    message: $"You've been invited to join a company.",
+                    notificationType: "CompanyInvite",
+                    url: $"/invitations?companyId={request.CompanyId}"
+                );
+
+                return Ok(new { Message = "User exists. Notification and invitation sent." });
+            }
+            else
+            {
+                // User doesn't exist yet → just send email with invite link
+                var inviteLink = $"https://localhost:3000/signup?email={Uri.EscapeDataString(request.Email)}&companyId={request.CompanyId}";
+
+                await emailService.SendEmailAsync(
+                    request.Email,
+                    "You're invited to join a company on Compedia",
+                    $"Click the link below to register and join the company:\n\n{inviteLink}"
+                );
+
+                return Ok(new { Message = "Invitation email sent to unregistered user." });
+            }
+        }
+
 
     }
+
+
 
 }
