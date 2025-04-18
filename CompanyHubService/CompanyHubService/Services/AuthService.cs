@@ -36,15 +36,27 @@ public class AuthService
 
     public async Task<IdentityResult> RegisterUserAsync(RegisterViewModel model)
     {
-        // if (urlHelper == null)
-        // {
-        //     throw new InvalidOperationException("🚨 `urlHelper` is null in RegisterUserAsync.");
-        // }
+        var existingEmailUser = await _userManager.FindByEmailAsync(model.Email);
+        if (existingEmailUser != null)
+        {
+            var error = IdentityResult.Failed(new IdentityError
+            {
+                Code = "DuplicateEmail",
+                Description = "Email is already registered."
+            });
+            return error;
+        }
 
-        // if (httpContext == null)
-        // {
-        //     throw new InvalidOperationException("HttpContext cannot be null.");
-        // }
+        var existingUsernameUser = await _userManager.FindByNameAsync(model.Username);
+        if (existingUsernameUser != null)
+        {
+            var error = IdentityResult.Failed(new IdentityError
+            {
+                Code = "DuplicateUsername",
+                Description = "Username is already taken."
+            });
+            return error;
+        }
 
         User user = new User
         {
