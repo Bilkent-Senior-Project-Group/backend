@@ -236,7 +236,7 @@ namespace CompanyHubService.Controllers
 
         [HttpPost("ModifyCompanyProfile")]
         [Authorize(Roles = "Root, Admin")] // Maybe VerifiedUser can modify their company profile too. Admin might be able to modify any company profile
-        public async Task<IActionResult> ModifyCompanyProfile(CompanyProfileDTO companyProfileDTO)
+        public async Task<IActionResult> ModifyCompanyProfile(CompanyProfileModifyDTO companyProfileDTO)
         {
 
             if (!ModelState.IsValid)

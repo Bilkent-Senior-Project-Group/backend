@@ -268,7 +268,37 @@ namespace CompanyHubService.Services
             return result;
         }
 
+        public async Task<bool> EditProjectAsync(EditProjectDTO dto)
+        {
+            var project = await dbContext.Projects
+                .Include(p => p.ServiceProjects)
+                .FirstOrDefaultAsync(p => p.ProjectId == dto.ProjectId);
 
+            if (project == null) return false;
+
+            project.ProjectName = dto.ProjectName;
+            project.Description = dto.Description;
+            project.TechnologiesUsed = dto.TechnologiesUsed;
+            project.ClientType = dto.ClientType;
+            project.StartDate = dto.StartDate;
+            project.CompletionDate = dto.CompletionDate;
+            project.ProjectUrl = dto.ProjectUrl;
+
+            // Update services
+            dbContext.ServiceProjects.RemoveRange(project.ServiceProjects);
+            if (dto.Services != null && dto.Services.Any())
+            {
+                var newServiceProjects = dto.Services.Select(sid => new ServiceProject
+                {
+                    ProjectId = dto.ProjectId,
+                    ServiceId = sid
+                });
+                await dbContext.ServiceProjects.AddRangeAsync(newServiceProjects);
+            }
+
+            await dbContext.SaveChangesAsync();
+            return true;
+        }
     }
 
 

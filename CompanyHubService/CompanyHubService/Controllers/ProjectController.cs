@@ -233,5 +233,31 @@ public class ProjectController : ControllerBase
         });
     }
 
+    [HttpPost("EditProject")]
+    [Authorize(Roles = "Root, Admin")]
+    public async Task<IActionResult> EditProject([FromBody] EditProjectDTO dto)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var projectId = dto.ProjectId;
+
+        var isUserInRelatedCompany = await dbContext.UserCompanies
+            .AnyAsync(uc =>
+                uc.UserId == userId &&
+                dbContext.ProjectCompanies.Any(pc =>
+                    pc.ProjectId == projectId &&
+                    (pc.ClientCompanyId == uc.CompanyId || pc.ProviderCompanyId == uc.CompanyId)
+                )
+            );
+
+        if (!isUserInRelatedCompany)
+            return BadRequest(new { Message = "You dont have permission to edit this project." });
+
+        var result = await projectService.EditProjectAsync(dto);
+        if (!result)
+            return BadRequest(new { Message = "Failed to update project." });
+
+        return Ok(new { Message = "Project updated successfully." });
+    }
+
 
 }

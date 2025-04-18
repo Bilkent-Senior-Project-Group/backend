@@ -254,7 +254,7 @@ namespace CompanyHubService.Services
         }
 
 
-        public async Task<bool> ModifyCompanyProfileAsync(CompanyProfileDTO companyProfileDTO)
+        public async Task<bool> ModifyCompanyProfileAsync(CompanyProfileModifyDTO companyProfileDTO)
         {
             try
             {
