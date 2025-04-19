@@ -521,6 +521,18 @@ namespace CompanyHubService.Controllers
         [Authorize(Roles = "Root, Admin")]
         public async Task<IActionResult> InviteUser([FromBody] InviteUserDTO request)
         {
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            // Check if the inviter is in the company
+            bool isInviterInCompany = await dbContext.UserCompanies
+                .AnyAsync(uc => uc.UserId == userId && uc.CompanyId == request.CompanyId);
+
+            if (!isInviterInCompany)
+            {
+                return Forbid("You are not authorized to invite users to this company.");
+            }
+
             var existingUser = await userManager.FindByEmailAsync(request.Email);
 
             if (existingUser != null)

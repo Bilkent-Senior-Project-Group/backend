@@ -1,4 +1,5 @@
-﻿using System.Security.Claims;
+﻿using System.Net;
+using System.Security.Claims;
 using Azure.Storage.Blobs;
 using CompanyHubService.Data;
 using CompanyHubService.DTOs;
@@ -25,14 +26,18 @@ namespace CompanyHubService.Controllers
 
         private readonly BlobServiceClient blobServiceClient;
 
-        public UserController(UserService userService, UserManager<User> userManager, CompanyHubDbContext dbContext, NotificationService notificationService, BlobServiceClient blobServiceClient)
+        private readonly IConfiguration _configuration;
+        private readonly EmailService emailService;
+
+        public UserController(UserService userService, UserManager<User> userManager, CompanyHubDbContext dbContext, NotificationService notificationService, BlobServiceClient blobServiceClient, IConfiguration configuration, EmailService emailService)
         {
             this.userService = userService;
             this.userManager = userManager;
             this.dbContext = dbContext;
             this.notificationService = notificationService;
             this.blobServiceClient = blobServiceClient;
-
+            _configuration = configuration;
+            this.emailService = emailService;
         }
 
 
@@ -173,12 +178,37 @@ namespace CompanyHubService.Controllers
         public async Task<IActionResult> AcceptInvitation([FromBody] Guid invitationId)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await userManager.FindByIdAsync(userId);
 
             var invitation = await dbContext.CompanyInvitations
                 .FirstOrDefaultAsync(i => i.InvitationId == invitationId && i.UserId == userId && !i.Accepted && !i.Rejected);
 
             if (invitation == null)
                 return BadRequest(new { Message = "Invitation not found or already processed." });
+
+            // Check the users role
+            var isUser = await userManager.IsInRoleAsync(user, "User");
+
+            if (isUser)
+            {
+                // Re-send confirmation email
+                var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+                var encodedToken = WebUtility.UrlEncode(token);
+                var confirmationLink = $"{_configuration["AppSettings:ClientUrl"]}/confirm-email?userId={user.Id}&token={encodedToken}";
+
+                await emailService.SendEmailAsync(user.Email, "Confirm Your Email",
+                $@"
+                <html>
+                <body>
+                    <h2>Email Confirmation Required</h2>
+                    <p>Please confirm your email by clicking the link below:</p>
+                    <a href='{confirmationLink}'>Confirm Email</a>
+                    <p>{confirmationLink}</p>
+                </body>
+                </html>");
+
+                return BadRequest(new { Message = "Please confirm your email before accepting the invitation. A confirmation email has been sent." });
+            }
 
             // Add user to company
             dbContext.UserCompanies.Add(new UserCompany
@@ -191,6 +221,14 @@ namespace CompanyHubService.Controllers
             invitation.Accepted = true;
 
             await dbContext.SaveChangesAsync();
+
+            var isVerifiedUser = await userManager.IsInRoleAsync(user, "VerifiedUser");
+
+            if (isVerifiedUser)
+            {
+                await userManager.RemoveFromRoleAsync(user, "VerifiedUser");
+                await userManager.AddToRoleAsync(user, "Root");
+            }
 
             return Ok(new { Message = "Invitation accepted. You have been added to the company." });
         }
