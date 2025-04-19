@@ -297,4 +297,19 @@ public class AccountController : ControllerBase
         // ✅ Return claims as JSON in the response
         return Ok(claims);
     }
+
+    [HttpGet("GetEmailConfirmed")]
+    [Authorize]
+    public async Task<IActionResult> GetEmailConfirmed()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var user = await _userManager.FindByIdAsync(userId);
+
+        if (user == null)
+        {
+            return NotFound(new { Message = "User not found." });
+        }
+
+        return Ok(new { EmailConfirmed = user.EmailConfirmed });
+    }
 }
