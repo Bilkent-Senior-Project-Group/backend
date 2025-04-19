@@ -209,6 +209,14 @@ namespace CompanyHubService.Services
                     // Navigation properties are explicitly excluded
                 }).ToList();
 
+                var locationInfo = await _dbContext.CitiesAndCountries
+                    .Where(x => x.ID == company.Location)
+                    .Select(x => new { x.City, x.Country })
+                    .FirstOrDefaultAsync();
+
+                var locationName = locationInfo != null ? $"{locationInfo.City}, {locationInfo.Country}" : null;
+
+
                 var companyKafkaDTO = new
                 {
                     CompanyId = company.CompanyId,
@@ -217,6 +225,7 @@ namespace CompanyHubService.Services
                     FoundedYear = company.FoundedYear,
                     CompanySize = company.CompanySize,
                     Location = company.Location,
+                    LocationName = locationName,
                     OverallRating = company.OverallRating,
                     Services = serviceData,
                     Projects = projectData,
