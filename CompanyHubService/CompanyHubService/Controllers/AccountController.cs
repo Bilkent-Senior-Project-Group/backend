@@ -302,6 +302,21 @@ public class AccountController : ControllerBase
         return Ok(claims);
     }
 
+    [HttpGet("GetEmailConfirmed")]
+    [Authorize]
+    public async Task<IActionResult> GetEmailConfirmed()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var user = await _userManager.FindByIdAsync(userId);
+
+        if (user == null)
+        {
+            return NotFound(new { Message = "User not found." });
+        }
+
+        return Ok(new { EmailConfirmed = user.EmailConfirmed });
+    }
+
     // This endpoint will be used in the frontend to send a confirmation email when the user is not authorized to create a company
     // Inside a catch block, we can call this endpoint to send a confirmation email
     [HttpPost("SendConfirmationEmail")]
