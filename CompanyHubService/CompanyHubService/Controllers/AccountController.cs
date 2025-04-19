@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Mvc.Abstractions;
 using System.Threading.Tasks;
 using System.Security.Claims;
 using Newtonsoft.Json;
+using System.Net;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -29,7 +30,9 @@ public class AccountController : ControllerBase
     private readonly IUrlHelperFactory _urlHelperFactory;
     private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public AccountController(AuthService authService, UserService userService, UserManager<User> userManager, EmailService emailService, CompanyHubDbContext dbContext, IUrlHelperFactory iurlhelperfactory, IHttpContextAccessor httpContextAccessor)
+    private readonly IConfiguration _configuration;
+
+    public AccountController(AuthService authService, UserService userService, UserManager<User> userManager, EmailService emailService, CompanyHubDbContext dbContext, IUrlHelperFactory iurlhelperfactory, IHttpContextAccessor httpContextAccessor, IConfiguration configuration)
     {
         _authService = authService;
         _userService = userService;
@@ -38,6 +41,7 @@ public class AccountController : ControllerBase
         _dbContext = dbContext;
         _httpContextAccessor = httpContextAccessor;
         _urlHelperFactory = iurlhelperfactory;
+        _configuration = configuration;
     }
 
     [HttpPost("Register")]
@@ -297,4 +301,35 @@ public class AccountController : ControllerBase
         // ✅ Return claims as JSON in the response
         return Ok(claims);
     }
+
+    // This endpoint will be used in the frontend to send a confirmation email when the user is not authorized to create a company
+    // Inside a catch block, we can call this endpoint to send a confirmation email
+    [HttpPost("SendConfirmationEmail")]
+    [Authorize(Roles = "User")] // Only unverified users
+    public async Task<IActionResult> SendConfirmationEmail()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var user = await _userManager.FindByIdAsync(userId);
+
+        if (user == null)
+            return Unauthorized();
+
+        var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+        var encodedToken = WebUtility.UrlEncode(token);
+        var confirmationLink = $"{_configuration["AppSettings:ClientUrl"]}/confirm-email?userId={user.Id}&token={encodedToken}";
+
+        await _emailService.SendEmailAsync(user.Email, "Confirm Your Email",
+        $@"
+        <html>
+        <body>
+            <h2>Email Confirmation Required</h2>
+            <p>Please confirm your email by clicking the link below:</p>
+            <a href='{confirmationLink}'>Confirm Email</a>
+            <p>{confirmationLink}</p>
+        </body>
+        </html>");
+
+        return Ok(new { Message = "A confirmation email has been sent. Please check your inbox." });
+    }
+
 }

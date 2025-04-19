@@ -13,6 +13,7 @@ using iText.Commons.Actions.Contexts;
 using iText.Kernel.Colors;
 using System.Security.Claims;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Identity;
 
 namespace CompanyHubService.Services
 {
@@ -23,14 +24,16 @@ namespace CompanyHubService.Services
         private readonly IProducer<string, string> _kafkaProducer;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly AnalyticsService analyticsService;
+        private readonly UserManager<User> userManager;
 
-        public CompanyService(CompanyHubDbContext dbContext, UserService userService, IProducer<string, string> kafkaProducer, IHttpClientFactory httpClientFactory, AnalyticsService analyticsService)
+        public CompanyService(CompanyHubDbContext dbContext, UserService userService, IProducer<string, string> kafkaProducer, IHttpClientFactory httpClientFactory, AnalyticsService analyticsService, UserManager<User> userManager)
         {
             _dbContext = dbContext;
             this.userService = userService;
             _kafkaProducer = kafkaProducer;
             _httpClientFactory = httpClientFactory;
             this.analyticsService = analyticsService;
+            this.userManager = userManager;
         }
 
         public async Task<bool> CreateCompanyAsync(CreateCompanyRequestDTO request, string userId)
@@ -88,6 +91,18 @@ namespace CompanyHubService.Services
                 CompanyId = company.CompanyId,
             };
             _dbContext.UserCompanies.Add(userCompany);
+
+            var user = await userManager.FindByIdAsync(userId);
+
+            var isVerifiedUser = await userManager.IsInRoleAsync(user, "VerifiedUser");
+            var isAlreadyRoot = await userManager.IsInRoleAsync(user, "Root");
+
+
+            if (isVerifiedUser && !isAlreadyRoot)
+            {
+                await userManager.RemoveFromRoleAsync(user, "VerifiedUser");
+                await userManager.AddToRoleAsync(user, "Root");
+            }
 
             List<Project> projects = new List<Project>();
 
@@ -284,7 +299,7 @@ namespace CompanyHubService.Services
                     }
                     company.CompanyName = companyProfileDTO.Name;
                 }
-                    
+
 
                 if (!string.IsNullOrWhiteSpace(companyProfileDTO.Description))
                     company.Description = companyProfileDTO.Description;

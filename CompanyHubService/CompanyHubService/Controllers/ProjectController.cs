@@ -195,13 +195,13 @@ public class ProjectController : ControllerBase
             project.ProviderMarkedCompleted = true;
         }
 
-        // ✅ If both sides marked completed, finalize the project
+        // If both sides marked completed, finalize the project
         if (project.ClientMarkedCompleted && project.ProviderMarkedCompleted)
         {
             project.IsCompleted = true;
             project.CompletionDate = DateTime.UtcNow;
 
-            // ✅ Send notification to the Root user of the ClientCompany
+            // Send notification to the Root user of the ClientCompany
             var rootUser = await dbContext.UserCompanies
                 .Where(uc => uc.CompanyId == project.ProjectCompany.ClientCompanyId)
                 .Include(uc => uc.User)
