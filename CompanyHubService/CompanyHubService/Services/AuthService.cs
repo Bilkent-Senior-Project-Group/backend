@@ -195,13 +195,13 @@ public class AuthService
             claims.Add(new Claim(ClaimTypes.Role, role)); // ✅ This ensures multiple roles work
         }
 
-        var key = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes("JWT_SECRET_PLACEHOLDER"));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:SecretKey"]));
+
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
-            issuer: "Compedia",
-            audience: "CompediaClient",
+            issuer: _configuration["JwtSettings:Issuer"],
+            audience: _configuration["JwtSettings:Audience"],
             claims: claims,
             expires: DateTime.UtcNow.AddHours(1),
             signingCredentials: creds

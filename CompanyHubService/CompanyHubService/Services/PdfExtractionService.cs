@@ -18,10 +18,7 @@ namespace CompanyHubService.Services
     public class PdfExtractionService : IPdfExtractionService
     {
         private readonly IConfiguration _configuration;
-        
-        // Hardcoded OpenAI API key
-        private const string OpenAIApiKey = "OPENAI_KEY_PLACEHOLDER_2";
-        
+                
         public PdfExtractionService(IConfiguration configuration)
         {
             _configuration = configuration;
@@ -31,9 +28,11 @@ namespace CompanyHubService.Services
         {
             // Extract text from PDF
             string pdfText = ExtractTextFromPdf(pdfStream);
-            
+
+            string apiKey = _configuration["OpenAI:ApiKey"];
+
             // Use OpenAI to extract structured data with hardcoded API key
-            return await ExtractStructuredDataWithOpenAI(pdfText, OpenAIApiKey);
+            return await ExtractStructuredDataWithOpenAI(pdfText, apiKey);
         }
         
         private string ExtractTextFromPdf(Stream pdfStream)
