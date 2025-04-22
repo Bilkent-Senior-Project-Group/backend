@@ -88,9 +88,11 @@ public class AccountController : ControllerBase
             return Unauthorized(new { Message = "Account is locked out. Please try again later." });
         }
 
-        var isAdmin = false;
+        var isAdmin = user.Id == "1"; // Check if the user is an admin (ID 1)
+        Console.WriteLine($"User ID: {user.Id}");
+        Console.WriteLine($"Is Admin: {isAdmin}");
         var userDTO = new UserDTO();
-        if (user.Id != "9f4d21df-e8ab-473a-889d-d2eeaee28b32")
+        if (user.Id != "1")
         {
 
             var companies = await _dbContext.UserCompanies
@@ -148,6 +150,7 @@ public class AccountController : ControllerBase
             };
         }
 
+        
         return Ok(new
         {
             isAdmin = isAdmin,
