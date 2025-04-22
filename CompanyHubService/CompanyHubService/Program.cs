@@ -50,8 +50,8 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = "Compedia",
-        ValidAudience = "CompediaClient",
+        ValidIssuer = builder.Configuration["JwtSettings:Issuer"],  // FIXED: Use JwtSettings:Issuer
+        ValidAudience = builder.Configuration["JwtSettings:Audience"], // FIXED: Use JwtSettings:Audience
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:SecretKey"]))
     };
 });
@@ -189,11 +189,7 @@ app.UseRouting();
 
 app.UseCors("AllowAll");
 
-app.UseRouting();
-app.UseCors("AllowAll");
 app.UseAuthentication();
-app.UseAuthorization();
-
 app.UseAuthorization();
 
 

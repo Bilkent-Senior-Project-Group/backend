@@ -126,8 +126,16 @@ namespace CompanyHubService.Controllers
         }
 
         [HttpGet("GetCompany/{companyName}")]
+        [Authorize]
         public async Task<IActionResult> GetCompany(string companyName)
         {
+            Console.WriteLine($"Is Authenticated: {User.Identity.IsAuthenticated}");
+            Console.WriteLine($"Authentication Type: {User.Identity.AuthenticationType}");
+            
+            foreach (var claim in User.Claims)
+            {
+                Console.WriteLine($"Claim: {claim.Type} = {claim.Value}");
+            }
             var company = await dbContext.Companies
                 .Where(c => c.CompanyName.Replace(" ", "") == companyName)
                 .Include(c => c.Projects)
@@ -222,9 +230,13 @@ namespace CompanyHubService.Controllers
                 TotalReviews = totalReviewsAsProvider
             };
 
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            Console.WriteLine($"User ID: {userId}");
+
             await analyticsService.InsertProfileViewAsync(new ProfileViewDTO
             {
-                VisitorUserId = User?.FindFirstValue(ClaimTypes.NameIdentifier),
+                VisitorUserId = userId,
                 CompanyId = company.CompanyId,
                 ViewDate = DateTime.UtcNow,
                 FromWhere = 0
@@ -362,7 +374,7 @@ namespace CompanyHubService.Controllers
             {
                 return BadRequest(new { Message = "Empty search" });
             }
-            var currentUserId = User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             Console.WriteLine($"Current User ID: {currentUserId}");
 
