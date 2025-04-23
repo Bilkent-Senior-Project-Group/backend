@@ -28,15 +28,15 @@ jobs:
       # Step 3: Log in to Public Amazon ECR
       - name: Log in to Amazon ECR (public)
         run: |
-          aws ecr-public get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin public.ecr.aws/a9t8d2b2/compedia
+          aws ecr-public get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin public.ecr.aws/a9t8d2b2/companyhubservice
 
       # Step 4: Build the Docker image
       - name: Build Docker image
         run: |
-          docker build -t compedia .
-          docker tag compedia:latest public.ecr.aws/a9t8d2b2/compedia:latest
+          docker build -t companyhubservice .
+          docker tag companyhubservice:latest public.ecr.aws/a9t8d2b2/companyhubservice:latest
 
       # Step 5: Push the Docker image to ECR
       - name: Push Docker image to ECR
         run: |
-          docker push public.ecr.aws/a9t8d2b2/compedia:latest
+          docker push public.ecr.aws/a9t8d2b2/companyhubservice:latest
