@@ -76,6 +76,39 @@ namespace CompanyHubService.Controllers
             return Ok(profile);
         }
 
+        [HttpPut("UpdateUserProfile")]
+        [Authorize]
+        public async Task<IActionResult> UpdateUserProfile([FromBody] UserProfileDTO model)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            // 1) Find the current user id from the token
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+                return Unauthorized(new { Message = "Invalid token." });
+
+            // 2) Load the user entity
+            var user = await userManager.FindByIdAsync(userId);
+            if (user == null)
+                return NotFound(new { Message = "User not found." });
+
+            // 3) Apply updates
+            user.FirstName    = model.FirstName;
+            user.LastName     = model.LastName;
+            user.PhoneNumber  = model.PhoneNumber;
+            user.Bio          = model.Bio;
+            user.Position     = null;
+            user.LinkedInUrl  = model.LinkedInUrl;
+
+            // 4) Save
+            var result = await userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+                return BadRequest(new { Errors = result.Errors });
+
+            return Ok(new { Message = "Profile updated successfully." });
+        }
+
         [HttpGet("GetUserCompanies")]
         [Authorize]
         public async Task<IActionResult> GetUserCompanies()

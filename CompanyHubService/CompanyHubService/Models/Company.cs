@@ -33,6 +33,8 @@ namespace CompanyHubService.Models
 
         public bool AddedOnPage { get; set; }
 
+        public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+
         public ICollection<ServiceCompany> ServiceCompanies { get; set; } = new List<ServiceCompany>();
         public List<Project> Projects { get; set; } = new List<Project>();
         // Navigation property for Products

@@ -52,7 +52,8 @@ namespace CompanyHubService.Services
                 Phone = request.Phone,
                 Email = request.Email,
                 LogoUrl = "https://azurelogo.blob.core.windows.net/company-logos/defaultcompany.png",
-                AddedOnPage = request.AddedOnPage
+                AddedOnPage = request.AddedOnPage,
+                LastUpdated = DateTime.UtcNow,
             };
 
             var serviceCompanies = new List<ServiceCompany>();
@@ -333,6 +334,8 @@ namespace CompanyHubService.Services
 
                 if (!string.IsNullOrWhiteSpace(companyProfileDTO.Website))
                     company.Website = companyProfileDTO.Website;
+
+                company.LastUpdated = DateTime.UtcNow;
 
                 await _dbContext.SaveChangesAsync();
 
