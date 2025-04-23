@@ -43,8 +43,4 @@ jobs:
 
       - name: Update ECS service
         run: |
-          aws ecs update-service \
-            --cluster companyhubservice \  # Replace with your ECS cluster name
-            --service companyhubservice-service \  # Replace with your ECS service name
-            --force-new-deployment \
-            --region eu-north-1
+          aws ecs update-service --cluster companyhubservice --service companyhubservice-service --force-new-deployment --region eu-north-1
