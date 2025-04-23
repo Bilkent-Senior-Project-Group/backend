@@ -56,7 +56,13 @@ public class AccountController : ControllerBase
 
         if (result.Succeeded)
         {
-            return Ok(new { Message = "Registration successful! Please verify your email." });
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            var token = _authService.GenerateJwtToken(user);
+            return Ok(new
+            {
+                Token = token,
+                Message = "Registration successful. Please verify your email to unlock full features."
+            });
         }
 
         return BadRequest(result.Errors);
@@ -150,7 +156,7 @@ public class AccountController : ControllerBase
             };
         }
 
-        
+
         return Ok(new
         {
             isAdmin = isAdmin,
