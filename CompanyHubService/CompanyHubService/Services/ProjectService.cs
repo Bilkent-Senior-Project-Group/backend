@@ -268,6 +268,41 @@ namespace CompanyHubService.Services
             return result;
         }
 
+        public async Task<List<ProjectRequestViewDTO>> GetSentProjectRequestsAsync(Guid companyId)
+        {
+            var requests = await dbContext.ProjectRequests
+                .Where(r =>
+                    (r.ClientCompanyId == companyId) &&
+                    !r.IsAccepted && !r.IsRejected)
+                .Include(r => r.ClientCompany)
+                .Include(r => r.ProviderCompany)
+                .ToListAsync();
+
+            var serviceMap = await dbContext.Services.ToDictionaryAsync(s => s.Id, s => s.Name);
+
+            var result = requests.Select(r => new ProjectRequestViewDTO
+            {
+                RequestId = r.RequestId,
+                ProjectName = r.ProjectName,
+                Description = r.Description,
+                TechnologiesUsed = r.TechnologiesUsed?.Split(", ", StringSplitOptions.None).ToList() ?? new List<string>(),
+                ClientType = r.ClientType,
+                ClientCompanyId = r.ClientCompanyId,
+                ProviderCompanyId = r.ProviderCompanyId ?? Guid.Empty,
+                ClientCompanyName = r.ClientCompany?.CompanyName,
+                ProviderCompanyName = r.ProviderCompany?.CompanyName,
+
+                Services = r.Services.Select(sid => new ServiceDTO
+                {
+                    Id = sid,
+                    Name = serviceMap.ContainsKey(sid) ? serviceMap[sid] : "Unknown"
+                }).ToList()
+            }).ToList();
+
+            return result;
+        }
+
+
         public async Task<bool> EditProjectAsync(EditProjectDTO dto)
         {
             var project = await dbContext.Projects
