@@ -1,67 +1,42 @@
-name: Build and deploy ASP.Net Core app to Azure Web App - compedia
+name: CI/CD Pipeline
 
 on:
   push:
     branches:
+      - main  # Trigger the workflow when changes are pushed to the `main` branch
+  pull_request:
+    branches:
       - main
-  workflow_dispatch:
-
-env:
-  PROJECT_PATH: 'CompanyHubService/CompanyHubService/CompanyHubService.csproj'
 
 jobs:
-  build:
-    runs-on: windows-latest
-    permissions:
-      contents: read #This is required for actions/checkout
-
+  build-and-push:
+    runs-on: ubuntu-latest
+    
     steps:
-      - uses: actions/checkout@v4
+      # Step 1: Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-      - name: Set up .NET Core
-        uses: actions/setup-dotnet@v4
+      # Step 2: Set up AWS CLI
+      - name: Set up AWS CLI
+        uses: aws-actions/configure-aws-credentials@v1
         with:
-          dotnet-version: '8.x'
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Build with dotnet
-        run: dotnet build ${{env.PROJECT_PATH}} --configuration Release
+      # Step 3: Log in to ECR
+      - name: Log in to Amazon ECR
+        run: |
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
 
-      - name: dotnet publish
-        run: dotnet publish ${{env.PROJECT_PATH}} -c Release -o "${{env.DOTNET_ROOT}}/myapp"
+      # Step 4: Build the Docker image
+      - name: Build Docker image
+        run: |
+          docker build -t companyhubservice .
+          docker tag companyhubservice:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/companyhubservice:latest
 
-      - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v4
-        with:
-          name: .net-app
-          path: ${{env.DOTNET_ROOT}}/myapp
-
-  deploy:
-    runs-on: windows-latest
-    needs: build
-    environment:
-      name: 'Production'
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
-    permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read #This is required for actions/checkout
-
-    steps:
-      - name: Download artifact from build job
-        uses: actions/download-artifact@v4
-        with:
-          name: .net-app
-
-      - name: Login to Azure
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_5F1721B3137044119B6F02A9EDA57A8C }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_D73BB2283A0646BF9076373BE3FD6780 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_EE9C3CB99DC8423BA5DF64718A53B3BA }}
-
-      - name: Deploy to Azure Web App
-        id: deploy-to-webapp
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: 'compedia'
-          slot-name: 'Production'
-          package: .
+      # Step 5: Push the Docker image to ECR
+      - name: Push Docker image to ECR
+        run: |
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/companyhubservice:latest
