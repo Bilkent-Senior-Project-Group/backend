@@ -176,7 +176,8 @@ namespace CompanyHubService.Services
             {
                 ProjectId = newProject.ProjectId,
                 ClientCompanyId = projectRequest.ClientCompanyId,
-                ProviderCompanyId = projectRequest.ProviderCompanyId
+                ProviderCompanyId = projectRequest.ProviderCompanyId,
+                IsClient = 2, // Both companies exist
             };
 
             dbContext.Projects.Add(newProject);
