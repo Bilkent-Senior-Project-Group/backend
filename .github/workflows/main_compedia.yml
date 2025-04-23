@@ -25,12 +25,6 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # Debug Step: Check AWS Region and Account ID
-      - name: Debug AWS Region and Account ID
-        run: |
-          echo "AWS_REGION=${{ secrets.AWS_REGION }}"
-          echo "AWS_ACCOUNT_ID=${{ secrets.AWS_ACCOUNT_ID }}"
-
       # Step 3: Log in to Public Amazon ECR
       - name: Log in to Amazon ECR (public)
         run: |
