@@ -25,6 +25,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+
       # Debug Step: Check AWS Region and Account ID
       - name: Debug AWS Region and Account ID
         run: |
