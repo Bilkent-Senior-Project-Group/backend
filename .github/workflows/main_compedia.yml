@@ -34,9 +34,9 @@ jobs:
       - name: Build Docker image
         run: |
           docker build -t companyhubservice .
-          docker tag companyhubservice:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/companyhubservice:latest
+          docker tag companyhubservice:latest 577638381504.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/companyhubservice:latest
 
       # Step 5: Push the Docker image to ECR
       - name: Push Docker image to ECR
         run: |
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/companyhubservice:latest
+          docker push 577638381504.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/companyhubservice:latest
