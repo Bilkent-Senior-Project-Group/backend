@@ -21,23 +21,22 @@ jobs:
       - name: Set up AWS CLI
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws-access-key-id: ${{ secrets.AKIAYM7POG7AMG4RM5J7}}
-          aws-secret-access-key: ${{ secrets.rzP/DERJFvJCat9hMO4BET3/LeIpH4bveHCTR64B }}
-          aws-region: ${{ secrets.us-east-1}}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
       # Step 3: Log in to ECR
       - name: Log in to Amazon ECR
         run: |
-          aws ecr get-login-password --region ${{ secrets.us-east-1 }} | docker login --username AWS --password-stdin ${{ secrets.Compedia }}.dkr.ecr.${{ secrets.us-east-1 }}.amazonaws.com
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
 
       # Step 4: Build the Docker image
       - name: Build Docker image
         run: |
           docker build -t companyhubservice .
-          docker tag companyhubservice:latest ${{ secrets.AKIAYM7POG7AMG4RM5J7 }}.dkr.ecr.${{ secrets.us-east-1 }}.amazonaws.com/companyhubservice:latest
+          docker tag companyhubservice:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/companyhubservice:latest
 
       # Step 5: Push the Docker image to ECR
       - name: Push Docker image to ECR
         run: |
-          docker push ${{ secrets.AKIAYM7POG7AMG4RM5J7 }}.dkr.ecr.${{ secrets.us-east-1 }}.amazonaws.com/companyhubservice:latest
-
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/companyhubservice:latest
