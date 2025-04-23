@@ -131,7 +131,7 @@ namespace CompanyHubService.Controllers
         {
             Console.WriteLine($"Is Authenticated: {User.Identity.IsAuthenticated}");
             Console.WriteLine($"Authentication Type: {User.Identity.AuthenticationType}");
-            
+
             foreach (var claim in User.Claims)
             {
                 Console.WriteLine($"Claim: {claim.Type} = {claim.Value}");
@@ -585,12 +585,19 @@ namespace CompanyHubService.Controllers
                     url: $"/invitations?companyId={request.CompanyId}"
                 );
 
+                // Send email notification
+                await emailService.SendEmailAsync(
+                    existingUser.Email,
+                    "You've been invited to join a company on Compedia",
+                    $"Click the link below to accept the invitation:\n\nhttp://localhost:3000/signup?email={Uri.EscapeDataString(request.Email)}&companyId={request.CompanyId}"
+                );
+
                 return Ok(new { Message = "User exists. Notification and invitation sent." });
             }
             else
             {
                 // User doesn't exist yet → just send email with invite link
-                var inviteLink = $"https://localhost:3000/signup?email={Uri.EscapeDataString(request.Email)}&companyId={request.CompanyId}";
+                var inviteLink = $"http://localhost:3000/signup?email={Uri.EscapeDataString(request.Email)}&companyId={request.CompanyId}";
 
                 await emailService.SendEmailAsync(
                     request.Email,
