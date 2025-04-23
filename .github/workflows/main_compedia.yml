@@ -25,18 +25,19 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # Step 3: Log in to ECR
-      - name: Log in to Amazon ECR
+
+      # Step 3: Log in to Public Amazon ECR
+      - name: Log in to Amazon ECR (public)
         run: |
-          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+          aws ecr-public get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin public.ecr.aws/a9t8d2b2/compedia
 
       # Step 4: Build the Docker image
       - name: Build Docker image
         run: |
-          docker build -t companyhubservice .
-          docker tag companyhubservice:latest 577638381504.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/companyhubservice:latest
+          docker build -t compedia .
+          docker tag compedia:latest public.ecr.aws/a9t8d2b2/compedia:latest
 
       # Step 5: Push the Docker image to ECR
       - name: Push Docker image to ECR
         run: |
-          docker push 577638381504.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/companyhubservice:latest
+          docker push public.ecr.aws/a9t8d2b2/compedia:latest
