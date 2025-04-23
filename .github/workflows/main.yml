@@ -1,0 +1,43 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main  # Trigger the workflow when changes are pushed to the `main` branch
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # Step 1: Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Step 2: Set up AWS CLI
+      - name: Set up AWS CLI
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AKIAYM7POG7AMG4RM5J7}}
+          aws-secret-access-key: ${{ secrets.rzP/DERJFvJCat9hMO4BET3/LeIpH4bveHCTR64B }}
+          aws-region: ${{ secrets.us-east-1}}
+
+      # Step 3: Log in to ECR
+      - name: Log in to Amazon ECR
+        run: |
+          aws ecr get-login-password --region ${{ secrets.us-east-1 }} | docker login --username AWS --password-stdin ${{ secrets.Compedia }}.dkr.ecr.${{ secrets.us-east-1 }}.amazonaws.com
+
+      # Step 4: Build the Docker image
+      - name: Build Docker image
+        run: |
+          docker build -t companyhubservice .
+          docker tag companyhubservice:latest ${{ secrets.AKIAYM7POG7AMG4RM5J7 }}.dkr.ecr.${{ secrets.us-east-1 }}.amazonaws.com/companyhubservice:latest
+
+      # Step 5: Push the Docker image to ECR
+      - name: Push Docker image to ECR
+        run: |
+          docker push ${{ secrets.AKIAYM7POG7AMG4RM5J7 }}.dkr.ecr.${{ secrets.us-east-1 }}.amazonaws.com/companyhubservice:latest
+
