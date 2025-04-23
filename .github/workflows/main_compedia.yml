@@ -40,3 +40,11 @@ jobs:
       - name: Push Docker image to ECR
         run: |
           docker push public.ecr.aws/a9t8d2b2/companyhubservice:latest
+
+      - name: Update ECS service
+        run: |
+          aws ecs update-service \
+            --cluster companyhubservice \  # Replace with your ECS cluster name
+            --service companyhubservice-service \  # Replace with your ECS service name
+            --force-new-deployment \
+            --region eu-north-1
