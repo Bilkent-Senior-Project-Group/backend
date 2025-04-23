@@ -336,5 +336,53 @@ public class ProjectController : ControllerBase
         return Ok(new { Message = "Project request deleted successfully." });
     }
 
+    // is project completed by client
+    [HttpGet("IsProjectCompletedByClient/{projectId}")]
+    [Authorize]
+    public async Task<IActionResult> IsProjectCompletedByClient(Guid projectId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        var project = await dbContext.Projects
+            .Include(p => p.ProjectCompany)
+            .FirstOrDefaultAsync(p => p.ProjectId == projectId);
+
+        if (project == null)
+            return NotFound("Project not found.");
+
+        var userCompany = await dbContext.UserCompanies
+            .FirstOrDefaultAsync(uc => uc.UserId == userId &&
+                (uc.CompanyId == project.ProjectCompany.ClientCompanyId || uc.CompanyId == project.ProjectCompany.ProviderCompanyId));
+
+        if (userCompany == null)
+            return BadRequest("You are not part of this project.");
+
+        return Ok(new { IsCompleted = project.ClientMarkedCompleted });
+    }
+
+    // is project completed by provider
+    [HttpGet("IsProjectCompletedByProvider/{projectId}")]
+    [Authorize]
+    public async Task<IActionResult> IsProjectCompletedByProvider(Guid projectId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        var project = await dbContext.Projects
+            .Include(p => p.ProjectCompany)
+            .FirstOrDefaultAsync(p => p.ProjectId == projectId);
+
+        if (project == null)
+            return NotFound("Project not found.");
+
+        var userCompany = await dbContext.UserCompanies
+            .FirstOrDefaultAsync(uc => uc.UserId == userId &&
+                (uc.CompanyId == project.ProjectCompany.ClientCompanyId || uc.CompanyId == project.ProjectCompany.ProviderCompanyId));
+
+        if (userCompany == null)
+            return BadRequest("You are not part of this project.");
+
+        return Ok(new { IsCompleted = project.ProviderMarkedCompleted });
+    }
+
 
 }
