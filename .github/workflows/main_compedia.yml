@@ -34,8 +34,8 @@ jobs:
       # Step 4: Build the Docker image
       - name: Build Docker image
         run: |
-          docker build -t companyhubservice .
-          docker tag companyhubservice:latest public.ecr.aws/a9t8d2b2/compedia:latest
+          docker build -t compedia .
+          docker tag compedia:latest public.ecr.aws/a9t8d2b2/compedia:latest
 
       # Step 5: Push the Docker image to ECR
       - name: Push Docker image to ECR
