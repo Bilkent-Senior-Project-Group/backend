@@ -25,6 +25,12 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      - name: Debug AWS Region
+        run: echo "Region is ${{ secrets.AWS_REGION }}"
+
+      - name: Debug ECR URI
+        run: echo "ECR URI is ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com"
+
       # Step 3: Log in to ECR
       - name: Log in to Amazon ECR
         run: |
