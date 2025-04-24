@@ -18,6 +18,12 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 # Set the working directory to /app for runtime
 WORKDIR /app
 
+# Expose port 80
+EXPOSE 80
+
+# Set the environment variable to bind the app to all network interfaces on port 80
+ENV ASPNETCORE_URLS=http://0.0.0.0:80
+
 # Copy the published app from the build stage
 COPY --from=build /app/publish .
 

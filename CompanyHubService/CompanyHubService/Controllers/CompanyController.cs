@@ -163,7 +163,9 @@ namespace CompanyHubService.Controllers
                 ProjectId = pc.Project.ProjectId,
                 ProjectName = pc.Project.ProjectName,
                 Description = pc.Project.Description,
-                TechnologiesUsed = pc.Project.TechnologiesUsed.Split(new[] { ", " }, StringSplitOptions.None).ToList(),
+                TechnologiesUsed = pc.Project.TechnologiesUsed != null
+                ? pc.Project.TechnologiesUsed.Split(",", StringSplitOptions.None).ToList()
+                : new List<string>(),
                 ClientType = pc.Project.ClientType,
                 StartDate = pc.Project.StartDate,
                 CompletionDate = pc.Project.CompletionDate,
@@ -503,7 +505,9 @@ namespace CompanyHubService.Controllers
                 ProjectId = pc.Project.ProjectId,
                 ProjectName = pc.Project.ProjectName,
                 Description = pc.Project.Description,
-                TechnologiesUsed = pc.Project.TechnologiesUsed?.Split(", ").ToList() ?? new List<string>(),
+                TechnologiesUsed = pc.Project.TechnologiesUsed != null
+                ? pc.Project.TechnologiesUsed.Split(",", StringSplitOptions.None).ToList()
+                : new List<string>(),
                 ClientType = pc.Project.ClientType,
                 StartDate = pc.Project.StartDate,
                 CompletionDate = pc.Project.CompletionDate,

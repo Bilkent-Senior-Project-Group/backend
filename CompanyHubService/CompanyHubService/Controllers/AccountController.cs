@@ -219,7 +219,7 @@ public class AccountController : ControllerBase
 
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
         // HERE WE SHOULD PASS THE LINK FOR THE RESET PASSWORD APGE
-        var resetLink = $"https://localhost:3000/reset-password?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(user.Email)}";
+        var resetLink = $"http://localhost:3000/reset-password?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(user.Email)}";
 
 
         //LATER DELETE THE TOKEN FROM EMAIL BODY 

@@ -147,6 +147,26 @@ public class ProjectController : ControllerBase
         return Ok(requests);
     }
 
+    [HttpGet("GetSentProjectRequests/{companyId}")]
+    [Authorize(Roles = "Root, VerifiedUser, Admin")]
+    public async Task<IActionResult> GetSentProjectRequests(Guid companyId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        var isUserInCompany = await dbContext.UserCompanies
+            .AnyAsync(uc => uc.UserId == userId && uc.CompanyId == companyId);
+
+        if (!isUserInCompany)
+            return Forbid("You are not authorized to view this company's requests.");
+
+        var requests = await projectService.GetSentProjectRequestsAsync(companyId);
+
+        if (!requests.Any())
+            return NotFound(new { Message = "No sent project requests for this company." });
+
+        return Ok(requests);
+    }
+
 
     [HttpPost("ApproveProjectRequest/{requestId}")]
     [Authorize(Roles = "Root")] // Only root user can approve a project request.
@@ -257,6 +277,111 @@ public class ProjectController : ControllerBase
             return BadRequest(new { Message = "Failed to update project." });
 
         return Ok(new { Message = "Project updated successfully." });
+    }
+
+    [HttpPut("EditProjectRequest/{requestId}")]
+    [Authorize]
+    public async Task<IActionResult> EditProjectRequest(Guid requestId, [FromBody] ProjectRequestEditDTO dto)
+    {
+        var request = await dbContext.ProjectRequests.FindAsync(requestId);
+
+        if (request == null || request.IsAccepted || request.IsRejected)
+            return BadRequest(new { Message = "Cannot edit a processed project request." });
+
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        var userCompanyIds = await dbContext.UserCompanies
+            .Where(uc => uc.UserId == userId)
+            .Select(uc => uc.CompanyId)
+            .ToListAsync();
+
+        if (!userCompanyIds.Contains(request.ClientCompanyId))
+        {
+            return Forbid("You are not authorized to modify this project request.");
+        }
+
+        request.ProjectName = dto.ProjectName;
+        request.Description = dto.Description;
+        request.TechnologiesUsed = string.Join(", ", dto.TechnologiesUsed);
+        request.ClientType = dto.ClientType;
+        request.Services = dto.ServiceIds;
+
+        await dbContext.SaveChangesAsync();
+        return Ok(new { Message = "Project request updated successfully." });
+    }
+
+    [HttpDelete("DeleteProjectRequest/{requestId}")]
+    [Authorize]
+    public async Task<IActionResult> DeleteProjectRequest(Guid requestId)
+    {
+        var request = await dbContext.ProjectRequests.FindAsync(requestId);
+
+        if (request == null || request.IsAccepted || request.IsRejected)
+            return BadRequest(new { Message = "Cannot delete a processed project request." });
+
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        var userCompanyIds = await dbContext.UserCompanies
+            .Where(uc => uc.UserId == userId)
+            .Select(uc => uc.CompanyId)
+            .ToListAsync();
+
+        if (!userCompanyIds.Contains(request.ClientCompanyId))
+        {
+            return Forbid("You are not authorized to modify this project request.");
+        }
+
+        dbContext.ProjectRequests.Remove(request);
+        await dbContext.SaveChangesAsync();
+        return Ok(new { Message = "Project request deleted successfully." });
+    }
+
+    // is project completed by client
+    [HttpGet("IsProjectCompletedByClient/{projectId}")]
+    [Authorize]
+    public async Task<IActionResult> IsProjectCompletedByClient(Guid projectId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        var project = await dbContext.Projects
+            .Include(p => p.ProjectCompany)
+            .FirstOrDefaultAsync(p => p.ProjectId == projectId);
+
+        if (project == null)
+            return NotFound("Project not found.");
+
+        var userCompany = await dbContext.UserCompanies
+            .FirstOrDefaultAsync(uc => uc.UserId == userId &&
+                (uc.CompanyId == project.ProjectCompany.ClientCompanyId || uc.CompanyId == project.ProjectCompany.ProviderCompanyId));
+
+        if (userCompany == null)
+            return BadRequest("You are not part of this project.");
+
+        return Ok(new { IsCompleted = project.ClientMarkedCompleted });
+    }
+
+    // is project completed by provider
+    [HttpGet("IsProjectCompletedByProvider/{projectId}")]
+    [Authorize]
+    public async Task<IActionResult> IsProjectCompletedByProvider(Guid projectId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        var project = await dbContext.Projects
+            .Include(p => p.ProjectCompany)
+            .FirstOrDefaultAsync(p => p.ProjectId == projectId);
+
+        if (project == null)
+            return NotFound("Project not found.");
+
+        var userCompany = await dbContext.UserCompanies
+            .FirstOrDefaultAsync(uc => uc.UserId == userId &&
+                (uc.CompanyId == project.ProjectCompany.ClientCompanyId || uc.CompanyId == project.ProjectCompany.ProviderCompanyId));
+
+        if (userCompany == null)
+            return BadRequest("You are not part of this project.");
+
+        return Ok(new { IsCompleted = project.ProviderMarkedCompleted });
     }
 
 
