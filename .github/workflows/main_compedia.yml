@@ -43,4 +43,4 @@ jobs:
 
       - name: Update ECS service
         run: |
-          aws ecs update-service --cluster companyhubservice --service companyhubservice-service --force-new-deployment --region eu-north-1
+          aws ecs update-service --cluster companyhubservice --service companyhubservice-service-b28y1vcn --force-new-deployment --region eu-north-1
