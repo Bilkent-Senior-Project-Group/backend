@@ -155,6 +155,35 @@ public class ReviewsController : ControllerBase
         return Ok(reviews);
     }
 
+    [HttpGet("GetReviewsByCompany/{companyId}")]
+    public async Task<IActionResult> GetReviewsByCompany(Guid companyId)
+    {
+        var company = await _dbContext.Companies.FindAsync(companyId);
+        if (company == null)
+        {
+            return NotFound(new { Message = "Company not found." });
+        }
+
+        var reviews = await _dbContext.Reviews
+            .Include(r => r.Project)
+                .ThenInclude(p => p.ProjectCompany)
+                    .ThenInclude(pc => pc.ProviderCompany)
+            .Where(r => r.Project.ProjectCompany.ProviderCompanyId == companyId)
+            .Select(r => new ReviewResponseDTO
+            {
+                ReviewId = r.ReviewId,
+                ReviewText = r.ReviewText,
+                Rating = r.Rating,
+                DatePosted = r.DatePosted,
+                ProjectName = r.Project.ProjectName,
+                ProviderCompanyName = r.Project.ProjectCompany.ProviderCompany.CompanyName,
+                UserName = r.User.UserName
+            })
+            .ToListAsync();
+
+        return Ok(reviews);
+    }
+
 
     private async Task UpdateCompanyRating(Guid? companyId)
     {
