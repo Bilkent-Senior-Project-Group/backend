@@ -332,6 +332,39 @@ namespace CompanyHubService.Controllers
             return Ok(companies);
         }
 
+        [HttpGet("GetCompaniesOfUserByUserName/{userName}")]
+        [Authorize] // Only the user can see their companies (maybe Admin can see all companies) Maybe it can be changed later???
+        public async Task<IActionResult> GetCompaniesOfUserByUserName(string userName)
+        {
+
+            if (string.IsNullOrEmpty(userName))
+            {
+                return BadRequest(new { Message = "User ID is required." });
+            }
+
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return Unauthorized(new { Message = "User ID not found in token." });
+            }
+
+            var user = await userManager.FindByNameAsync(userName);
+            if (user == null)
+            {
+                return NotFound(new { Message = "User not found." });
+            }
+
+            var companies = await companyService.GetCompaniesOfUserAsync(user.Id);
+
+            if (companies == null || !companies.Any())
+            {
+                return NotFound(new { Message = "No company found for the user." });
+            }
+
+            return Ok(companies);
+        }
+
+
         [HttpGet("GetFeaturedCompanies")]
         public async Task<IActionResult> GetFeaturedCompanies()
         {
