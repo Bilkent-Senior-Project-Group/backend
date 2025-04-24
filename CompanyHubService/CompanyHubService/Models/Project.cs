@@ -12,7 +12,7 @@ namespace CompanyHubService.Models
         public string TechnologiesUsed { get; set; }
         public string ClientType { get; set; }
         public DateTime StartDate { get; set; }
-        public DateTime CompletionDate { get; set; }
+        public DateTime? CompletionDate { get; set; }
         public bool IsOnCompedia { get; set; }
         public bool ClientMarkedCompleted { get; set; } = false;
         public bool ProviderMarkedCompleted { get; set; } = false;
