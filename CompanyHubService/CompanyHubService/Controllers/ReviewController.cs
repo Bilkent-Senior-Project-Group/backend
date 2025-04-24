@@ -93,6 +93,14 @@ public class ReviewsController : ControllerBase
         return CreatedAtAction(nameof(GetReview), new { id = review.ReviewId }, reviewResponse);
     }
 
+    // is there any review on a project?
+    [HttpGet("HasReview/{projectId}")]
+    public async Task<IActionResult> HasReview(Guid projectId)
+    {
+        var hasReview = await _dbContext.Reviews.AnyAsync(r => r.ProjectId == projectId);
+        return Ok(new { HasReview = hasReview });
+    }
+
 
 
     [HttpGet("GetReview/{id}")]
@@ -187,9 +195,8 @@ public class ReviewsController : ControllerBase
 
     private async Task UpdateCompanyRating(Guid? companyId)
     {
-        // Get all project IDs where the company is the provider
         var providerProjectIds = await _dbContext.ProjectCompanies
-            .Where(pc => pc.ProviderCompanyId == companyId)
+            .Where(pc => pc.ProviderCompanyId == companyId && pc.Project.IsOnCompedia)
             .Select(pc => pc.ProjectId)
             .ToListAsync();
 
@@ -204,7 +211,6 @@ public class ReviewsController : ControllerBase
             return;
         }
 
-        // Get all reviews tied to those projects
         var ratings = await _dbContext.Reviews
             .Where(r => providerProjectIds.Contains(r.ProjectId))
             .Select(r => r.Rating)
@@ -216,7 +222,8 @@ public class ReviewsController : ControllerBase
 
         if (ratings.Any())
         {
-            companyToUpdate.OverallRating = ratings.Average();
+            var divisor = providerProjectIds.Count;
+            companyToUpdate.OverallRating = ratings.Sum() / (double)divisor;
         }
         else
         {
@@ -225,6 +232,7 @@ public class ReviewsController : ControllerBase
 
         await _dbContext.SaveChangesAsync();
     }
+
 
 
 }
