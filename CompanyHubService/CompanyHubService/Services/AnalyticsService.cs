@@ -11,49 +11,41 @@ using CompanyHubService.Models;
 using CompanyHubService.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 public class AnalyticsService 
 {
     private readonly CompanyHubDbContext _context;
     private readonly UserService _userService;
     private readonly AuthService _authService;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly UserManager<User> userManager;
     
-    public AnalyticsService(CompanyHubDbContext context, IHttpContextAccessor httpContextAccessor)
+    public AnalyticsService(CompanyHubDbContext context, IHttpContextAccessor httpContextAccessor, UserService userService, AuthService authService, UserManager<User> userManager)
     {
         _context = context;
         _httpContextAccessor = httpContextAccessor;
+        _userService = userService;
+        _authService = authService;
+        this.userManager = userManager;
     }
 
-
-
-    public async Task InsertSearchQueryDataAsync(List<Guid> companyIds, string queryText, string userId)
+    public async Task InsertSearchQueryDataAsync(SearchQueryLogDTO searchQueryLogDto)
     {
-        // Check if the user is authenticated
-        if (userId == null)
-        {
-            await LogSearchQueryAsync(companyIds, queryText, null);
-            return;
-        }
-        else {
-            await LogSearchQueryAsync(companyIds, queryText, userId);
-            
-        }
-        // Log the search query
+        // Get the user ID from the current HTTP context if available
+
         
-    }
-    private async Task LogSearchQueryAsync(List<Guid> companyIds, string queryText, string userId)
-    {
+        // Create and save the search query log
         var searchLog = new SearchQueryLog
         {
-            VisitorId = userId,
-            CompanyIds = companyIds,
-            QueryText = queryText,
+            VisitorId = searchQueryLogDto.VisitorId,
+            CompanyIds = searchQueryLogDto.CompanyIds,
+            QueryText = searchQueryLogDto.QueryText,
             SearchDate = DateTime.UtcNow
         };
+        
         _context.SearchQueryLogs.Add(searchLog);
         await _context.SaveChangesAsync();
-    }
-    public async Task<List<SearchQueryLogDTO>> GetSearchQueriesAsync(Guid companyId)
+    }  public async Task<List<SearchQueryLogDTO>> GetSearchQueriesAsync(Guid companyId)
     {
        var searchQueries = await _context.SearchQueryLogs
             .ToListAsync();

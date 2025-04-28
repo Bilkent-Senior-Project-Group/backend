@@ -69,6 +69,7 @@ namespace CompanyHubService.Controllers
                 PhoneNumber = user.PhoneNumber,
                 UserName = user.UserName,
                 Bio = user.Bio,
+                Email = user.Email,
                 Position = user.Position,
                 LinkedInUrl = user.LinkedInUrl
             };

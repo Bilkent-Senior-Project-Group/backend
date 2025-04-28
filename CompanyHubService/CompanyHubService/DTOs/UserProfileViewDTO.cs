@@ -14,7 +14,7 @@ namespace CompanyHubService.DTOs
 
         public string? Position { get; set; }
 
-        public string? LinkedInUrl { get; set; }
+        public string LinkedInUrl { get; set; }
     }
 
 }
