@@ -1,8 +1,19 @@
 
+using System.Security.Claims;
 using System.Threading.Tasks;
 using CompanyHubService.DTOs;
 using Microsoft.AspNetCore.Mvc;
 
+using CompanyHubService.Data;
+
+using CompanyHubService.Models;
+using CompanyHubService.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using iText.Layout.Element;
 [ApiController]
 [Route("api/analytics")]
 public class AnalyticsController : ControllerBase
@@ -32,16 +43,30 @@ public class AnalyticsController : ControllerBase
         
         return Ok(profileViews);
     }
-
     [HttpPost("InsertSearchQueryData")]
-    public async Task<IActionResult> InsertSearchQueryData([FromBody] SearchQueryLogDTO searchQueryLogDto, 
-        [FromQuery] string visitorId)
+    [Authorize]
+    public async Task<IActionResult> InsertSearchQueryData([FromBody] SearchQueryLogWrapperDTO wrapper)
     {
-        if (searchQueryLogDto == null)
+        if (wrapper?.searchQueryLogDto == null)
             return BadRequest(new { Message = "Invalid data." });
-        
 
-        await _analyticsService.InsertSearchQueryDataAsync(searchQueryLogDto.CompanyIds, searchQueryLogDto.QueryText, visitorId);
+        var searchQueryLogDto = wrapper.searchQueryLogDto;
+        Console.WriteLine("InsertSearchQueryData called with data: " + searchQueryLogDto.ToString());
+        
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId != null)
+        {
+            searchQueryLogDto.VisitorId = userId;
+        }
+        else
+        {
+            // Handle the case where the user is not authenticated
+            return Unauthorized(new { Message = "User is not authenticated." });
+        }
+
+        // The VisitorId will be handled in the service layer using HttpContextAccessor
+        await _analyticsService.InsertSearchQueryDataAsync(searchQueryLogDto);
+
         return Ok(new { Message = "Search query data inserted successfully." });
     }
     [HttpPost("InsertProfileViewData")]

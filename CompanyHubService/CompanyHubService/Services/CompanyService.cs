@@ -519,7 +519,7 @@ namespace CompanyHubService.Services
                 .ToList();
 
 
-                await analyticsService.InsertSearchQueryDataAsync(companyIds, searchQuery.searchQuery, userId);
+                // await analyticsService.InsertSearchQueryDataAsync(companyIds, searchQuery.searchQuery, userId);
 
                 return JsonConvert.SerializeObject(new
                 {
