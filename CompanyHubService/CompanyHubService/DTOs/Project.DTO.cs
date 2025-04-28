@@ -18,7 +18,7 @@ namespace CompanyHubService.DTOs
         public string ClientType { get; set; }
         public DateTime StartDate { get; set; }
 
-        public DateTime CompletionDate { get; set; }
+        public DateTime? CompletionDate { get; set; }
 
         public bool IsOnCompedia { get; set; }
 
