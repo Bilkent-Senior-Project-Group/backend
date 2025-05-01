@@ -542,8 +542,8 @@ namespace CompanyHubService.Controllers
                 ? pc.Project.TechnologiesUsed.Split(",", StringSplitOptions.None).ToList()
                 : new List<string>(),
                 ClientType = pc.Project.ClientType,
-                StartDate = pc.Project.StartDate,
-                CompletionDate = pc.Project.CompletionDate  ?? DateTime.MinValue,
+                StartDate = pc.Project.StartDate ?? DateTime.MinValue,
+                CompletionDate = pc.Project.CompletionDate ?? DateTime.MinValue,
                 IsOnCompedia = pc.Project.IsOnCompedia,
                 IsCompleted = pc.Project.IsCompleted,
                 ProjectUrl = pc.Project.ProjectUrl,

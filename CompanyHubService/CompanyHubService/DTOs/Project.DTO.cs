@@ -16,7 +16,7 @@ namespace CompanyHubService.DTOs
 
         //[JsonPropertyName("client_type")]  // Explicitly map JSON field
         public string ClientType { get; set; }
-        public DateTime StartDate { get; set; }
+        public DateTime? StartDate { get; set; }
 
         public DateTime? CompletionDate { get; set; }
 
