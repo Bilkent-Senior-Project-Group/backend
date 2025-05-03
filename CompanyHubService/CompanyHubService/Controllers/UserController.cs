@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Net.Mail;
 using System.Security.Claims;
 using Azure.Storage.Blobs;
 using CompanyHubService.Data;
@@ -14,7 +15,6 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
 
 namespace CompanyHubService.Controllers
 {
-    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class UserController : ControllerBase
@@ -42,6 +42,7 @@ namespace CompanyHubService.Controllers
 
 
         [HttpGet("GetAllUsers")]
+        [Authorize]
         public async Task<ActionResult<List<User>>> GetAllUsers()
         {
             var users = await userService.GetAllUsers();
@@ -95,12 +96,12 @@ namespace CompanyHubService.Controllers
                 return NotFound(new { Message = "User not found." });
 
             // 3) Apply updates
-            user.FirstName    = model.FirstName;
-            user.LastName     = model.LastName;
-            user.PhoneNumber  = model.PhoneNumber;
-            user.Bio          = model.Bio;
-            user.Position     = null;
-            user.LinkedInUrl  = model.LinkedInUrl;
+            user.FirstName = model.FirstName;
+            user.LastName = model.LastName;
+            user.PhoneNumber = model.PhoneNumber;
+            user.Bio = model.Bio;
+            user.Position = null;
+            user.LinkedInUrl = model.LinkedInUrl;
 
             // 4) Save
             var result = await userManager.UpdateAsync(user);
@@ -308,7 +309,37 @@ namespace CompanyHubService.Controllers
             return Ok(invitations);
         }
 
+        [HttpPost("SendSupportMessage")]
+        public IActionResult SendSupportMessage([FromBody] SupportRequestDTO request)
+        {
+            try
+            {
 
+                var smtpClient = new SmtpClient("smtp.gmail.com")
+                {
+                    Port = 587,
+                    Credentials = new NetworkCredential("compediacorp@gmail.com", _configuration["Smtp:Password"]),
+                    EnableSsl = true,
+                };
+
+                var mailMessage = new MailMessage
+                {
+                    From = new MailAddress(request.Email),
+                    Subject = $"Compedia Support Message from user: {request.Name}",
+                    Body = request.Message,
+                    IsBodyHtml = false,
+                };
+                mailMessage.To.Add("compediacorp@gmail.com");
+
+                smtpClient.Send(mailMessage);
+
+                return Ok(new { message = "Message sent successfully." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Failed to send message.", error = ex.Message });
+            }
+        }
 
     }
 }
