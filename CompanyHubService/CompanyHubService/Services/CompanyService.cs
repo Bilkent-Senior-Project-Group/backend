@@ -425,20 +425,58 @@ namespace CompanyHubService.Services
             return users;
         }
 
-        public async Task<List<CompanyDTO>> GetCompaniesOfUserAsync(string userId)
+        public async Task<List<UserCompanyWithTechnologiesDTO>> GetCompaniesOfUserAsync(string userId)
         {
-            var companies = await _dbContext.UserCompanies
+            // 1. Get the user's company IDs
+            var userCompanyIds = await _dbContext.UserCompanies
                 .Where(uc => uc.UserId == userId)
-                .Include(uc => uc.Company)
-                .Select(uc => new CompanyDTO
-                {
-                    CompanyId = uc.Company.CompanyId,
-                    CompanyName = uc.Company.CompanyName
-                })
+                .Select(uc => uc.CompanyId)
                 .ToListAsync();
 
-            return companies;
+            // 2. Get company info with services
+            var companies = await _dbContext.Companies
+                .Where(c => userCompanyIds.Contains(c.CompanyId))
+                .Include(c => c.ServiceCompanies)
+                    .ThenInclude(sc => sc.Service)
+                .ToListAsync();
+
+            // 3. Get related projects through ProjectCompanies
+            var projectCompanies = await _dbContext.ProjectCompanies
+                .Where(pc =>
+                    (pc.ClientCompanyId.HasValue && userCompanyIds.Contains(pc.ClientCompanyId.Value)) ||
+                    (pc.ProviderCompanyId.HasValue && userCompanyIds.Contains(pc.ProviderCompanyId.Value)))
+                .Include(pc => pc.Project)
+                .ToListAsync();
+
+            // 4. Compose the final result
+            var result = companies.Select(company =>
+            {
+                var relatedProjects = projectCompanies
+                    .Where(pc =>
+                        pc.ClientCompanyId == company.CompanyId ||
+                        (pc.ProviderCompanyId.HasValue && pc.ProviderCompanyId.Value == company.CompanyId))
+                    .Select(pc => pc.Project)
+                    .Where(p => p != null && !string.IsNullOrWhiteSpace(p.TechnologiesUsed))
+                    .ToList();
+
+                var technologies = relatedProjects
+                    .SelectMany(p => p.TechnologiesUsed.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    .Select(t => t.Trim())
+                    .Distinct()
+                    .ToList();
+
+                return new UserCompanyWithTechnologiesDTO
+                {
+                    CompanyId = company.CompanyId,
+                    CompanyName = company.CompanyName,
+                    Services = company.ServiceCompanies.Select(sc => sc.Service.Name).ToList(),
+                    TechnologiesUsed = technologies
+                };
+            }).ToList();
+
+            return result;
         }
+
 
         public async Task<string> FreeTextSearchAsync(FreeTextSearchDTO searchQuery, string? userId)
         {
