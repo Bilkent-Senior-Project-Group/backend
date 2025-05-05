@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using iText.Layout.Element;
+using System.Linq;
 namespace CompanyHubService.Controllers
 {
 
@@ -562,6 +563,86 @@ namespace CompanyHubService.Controllers
                     Name = sp.Service.Name
                 }).ToList()
             }).ToList();
+
+            return Ok(result);
+        }
+
+        [HttpPost("GetTopCompaniesByServices")]
+        [Authorize]
+        public async Task<IActionResult> GetTopCompaniesByServices([FromBody] List<Guid> serviceIds)
+        {
+            if (serviceIds == null || !serviceIds.Any())
+            {
+                return BadRequest(new { Message = "At least one service ID is required." });
+            }
+
+            // Get companies that have any of the requested services
+            var companiesWithMatchCount = await dbContext.ServiceCompanies
+                .Where(sc => serviceIds.Contains(sc.ServiceId))
+                .GroupBy(sc => sc.CompanyId)
+                .Select(g => new
+                {
+                    CompanyId = g.Key,
+                    MatchCount = g.Count(), // Count how many requested services the company offers
+                    TotalPercentage = g.Sum(sc => sc.Percentage) // Sum the percentages for ranking
+                })
+                .OrderByDescending(c => c.MatchCount) // Prioritize companies with more matching services
+                .ThenByDescending(c => c.TotalPercentage) // Then by total percentage of expertise
+                .Take(4) // Get top 4
+                .ToListAsync();
+
+            if (!companiesWithMatchCount.Any())
+            {
+                return NotFound(new { Message = "No companies found with the specified services." });
+            }
+
+            // Get the full company details for the top matches
+            var companyIds = companiesWithMatchCount.Select(c => c.CompanyId).ToList();
+            var companies = await dbContext.Companies
+                .Where(c => companyIds.Contains(c.CompanyId))
+                .Include(c => c.ServiceCompanies)
+                    .ThenInclude(sc => sc.Service)
+                        .ThenInclude(s => s.Industry)
+                .ToListAsync();
+
+            // Get location information
+            var locationIds = companies.Select(c => c.Location).ToList();
+            var locations = await dbContext.CitiesAndCountries
+                .Where(cc => locationIds.Contains(cc.ID))
+                .ToDictionaryAsync(cc => cc.ID, cc => cc);
+
+            // Create DTOs for the results, maintaining the order from companiesWithMatchCount
+            var result = companiesWithMatchCount
+                .Join(companies,
+                    match => match.CompanyId,
+                    company => company.CompanyId,
+                    (match, company) => new CompanyServiceMatchDTO
+                    {
+                        CompanyId = company.CompanyId,
+                        Name = company.CompanyName,
+                        Description = company.Description,
+                        FoundedYear = company.FoundedYear,
+                        Location = company.Location,
+                        City = locations.ContainsKey(company.Location) ? locations[company.Location].City : null,
+                        Country = locations.ContainsKey(company.Location) ? locations[company.Location].Country : null,
+                        Website = company.Website,
+                        CompanySize = company.CompanySize,
+                        LogoUrl = company.LogoUrl,
+                        OverallRating = company.OverallRating,
+                        MatchingServiceCount = match.MatchCount,
+                        TotalServiceCount = serviceIds.Count,
+                        Services = company.ServiceCompanies
+                            .Where(sc => serviceIds.Contains(sc.ServiceId))
+                            .Select(sc => new ServiceIndustryViewDTO
+                            {
+                                Id = sc.Service.Id,
+                                ServiceName = sc.Service.Name,
+                                IndustryId = sc.Service.IndustryId,
+                                IndustryName = sc.Service.Industry.Name,
+                                Percentage = sc.Percentage
+                            }).ToList()
+                    })
+                .ToList();
 
             return Ok(result);
         }
