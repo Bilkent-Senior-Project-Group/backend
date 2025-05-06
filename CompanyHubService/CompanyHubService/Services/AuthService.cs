@@ -210,4 +210,32 @@ public class AuthService
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
+
+    // validate token by parametere token
+    public async Task<ClaimsPrincipal> ValidateToken(string token)
+    {
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var key = Encoding.UTF8.GetBytes(_configuration["JwtSettings:SecretKey"]);
+
+        var validationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(key),
+            ValidateIssuer = true,
+            ValidIssuer = _configuration["JwtSettings:Issuer"],
+            ValidateAudience = true,
+            ValidAudience = _configuration["JwtSettings:Audience"],
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero
+        };
+
+        try
+        {
+            return tokenHandler.ValidateToken(token, validationParameters, out SecurityToken validatedToken);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
 }

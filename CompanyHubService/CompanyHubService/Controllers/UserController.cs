@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Net;
 using System.Net.Mail;
 using System.Security.Claims;
 using Azure.Storage.Blobs;
@@ -29,7 +30,9 @@ namespace CompanyHubService.Controllers
         private readonly IConfiguration _configuration;
         private readonly EmailService emailService;
 
-        public UserController(UserService userService, UserManager<User> userManager, CompanyHubDbContext dbContext, NotificationService notificationService, BlobServiceClient blobServiceClient, IConfiguration configuration, EmailService emailService)
+        private readonly AuthService authService;
+
+        public UserController(UserService userService, UserManager<User> userManager, CompanyHubDbContext dbContext, NotificationService notificationService, BlobServiceClient blobServiceClient, IConfiguration configuration, EmailService emailService, AuthService authService)
         {
             this.userService = userService;
             this.userManager = userManager;
@@ -38,6 +41,7 @@ namespace CompanyHubService.Controllers
             this.blobServiceClient = blobServiceClient;
             _configuration = configuration;
             this.emailService = emailService;
+            this.authService = authService;
         }
 
 
@@ -341,5 +345,55 @@ namespace CompanyHubService.Controllers
             }
         }
 
+        [HttpGet("CheckTokenExpiration")]
+        [Authorize]
+        public IActionResult CheckTokenExpiration(string token)
+        {
+            // first validate the token
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var jwtToken = tokenHandler.ReadToken(token) as JwtSecurityToken;
+            if (jwtToken == null)
+                return Unauthorized(new { Message = "Invalid token." });
+
+            // Check if the token is expired
+
+            var expirationClaim = User.FindFirst("exp");
+            if (expirationClaim == null)
+                return Unauthorized(new { Message = "Invalid token." });
+
+            var expirationDate = DateTimeOffset.FromUnixTimeSeconds(long.Parse(expirationClaim.Value));
+            var isExpired = expirationDate < DateTimeOffset.UtcNow;
+
+            if (isExpired)
+            {
+                // Token is expired, refresh it
+                return Unauthorized(new { Message = "Token expired." });
+            }
+
+            return Ok(new { Message = "Token is valid." });
+        }
+
+        [HttpPost("RefreshToken")]
+        [Authorize]
+        public async Task<IActionResult> RefreshToken()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(new { Message = "Invalid token." });
+
+            // Retrieve the user
+            var user = await userManager.FindByIdAsync(userId);
+            if (user == null)
+                return Unauthorized(new { Message = "User not found." });
+
+            // Generate a new token
+            var newToken = await authService.GenerateJwtToken(user);
+
+            return Ok(new { Token = newToken });
+        }
+
+
+
     }
 }
+
