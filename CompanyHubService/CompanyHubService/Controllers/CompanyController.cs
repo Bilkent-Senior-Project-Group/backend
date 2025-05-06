@@ -35,7 +35,9 @@ namespace CompanyHubService.Controllers
 
         private readonly EmailService emailService;
 
-        public CompanyController(IPdfExtractionService pdfExtractionService, CompanyService companyService, UserService userService, UserManager<User> userManager, CompanyHubDbContext dbContext, BlobStorageService blobStorageService, AnalyticsService analyticsService, IHttpContextAccessor httpContextAccessor, NotificationService notificationService, EmailService emailService)
+        private readonly IConfiguration _configuration;
+
+        public CompanyController(IPdfExtractionService pdfExtractionService, CompanyService companyService, UserService userService, UserManager<User> userManager, CompanyHubDbContext dbContext, BlobStorageService blobStorageService, AnalyticsService analyticsService, IHttpContextAccessor httpContextAccessor, NotificationService notificationService, EmailService emailService, IConfiguration configuration)
         {
             _httpContextAccessor = httpContextAccessor;
             this.pdfExtractionService = pdfExtractionService;
@@ -47,6 +49,7 @@ namespace CompanyHubService.Controllers
             this.analyticsService = analyticsService;
             this.notificationService = notificationService;
             this.emailService = emailService;
+            _configuration = configuration;
         }
 
 
@@ -703,19 +706,22 @@ namespace CompanyHubService.Controllers
                     url: $"/invitations?companyId={request.CompanyId}"
                 );
 
+                var clientUrl = _configuration["AppSettings:ClientUrl"];
+
                 // Send email notification
                 await emailService.SendEmailAsync(
                     existingUser.Email,
                     "You've been invited to join a company on Compedia",
-                    $"Click the link below to accept the invitation:\n\nhttp://localhost:3000/signup?email={Uri.EscapeDataString(request.Email)}&companyId={request.CompanyId}"
+                    $"Click the link below to accept the invitation:\n\n{clientUrl}/signup?email={Uri.EscapeDataString(request.Email)}&companyId={request.CompanyId}"
                 );
 
                 return Ok(new { Message = "User exists. Notification and invitation sent." });
             }
             else
             {
+                var clientUrl = _configuration["AppSettings:ClientUrl"];
                 // User doesn't exist yet → just send email with invite link
-                var inviteLink = $"http://localhost:3000/signup?email={Uri.EscapeDataString(request.Email)}&companyId={request.CompanyId}";
+                var inviteLink = $"{clientUrl}/signup?email={Uri.EscapeDataString(request.Email)}&companyId={request.CompanyId}";
 
                 await emailService.SendEmailAsync(
                     request.Email,

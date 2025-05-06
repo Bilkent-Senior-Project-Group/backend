@@ -217,9 +217,10 @@ public class AccountController : ControllerBase
             return BadRequest(new { message = "User not found." });
         }
 
+        var clientUrl = _configuration["AppSettings:ClientUrl"];
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
         // HERE WE SHOULD PASS THE LINK FOR THE RESET PASSWORD APGE
-        var resetLink = $"http://localhost:3000/reset-password?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(user.Email)}";
+        var resetLink = $"{clientUrl}/reset-password?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(user.Email)}";
 
 
         //LATER DELETE THE TOKEN FROM EMAIL BODY 
