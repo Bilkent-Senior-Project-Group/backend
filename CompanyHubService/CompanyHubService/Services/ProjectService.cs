@@ -14,15 +14,18 @@ namespace CompanyHubService.Services
         private CompanyHubDbContext dbContext { get; set; }
         private UserService userService { get; set; }
         private NotificationService notificationService { get; set; }
+
+        private readonly EmailService emailService;
         private readonly IProducer<string, string> _kafkaProducer;
 
 
-        public ProjectService(CompanyHubDbContext dbContext, UserService userService, NotificationService notificationService, IProducer<string, string> kafkaProducer)
+        public ProjectService(CompanyHubDbContext dbContext, UserService userService, NotificationService notificationService, IProducer<string, string> kafkaProducer, EmailService emailService)
         {
             this.dbContext = dbContext;
             this.userService = userService;
             this.notificationService = notificationService;
             this._kafkaProducer = kafkaProducer;
+            this.emailService = emailService;
         }
 
         public async Task<ProjectViewDTO?> GetProjectAsync(Guid projectId)
@@ -114,6 +117,15 @@ namespace CompanyHubService.Services
                 );
             }
 
+            // Send an email to the provider company email
+            var providerCompanyEmail = providerCompany.Email;
+            var emailSubject = "New Project Request Received";
+            var emailBody = $"Your company has received a project request from {clientCompany.CompanyName}.";
+            var emailSent = await emailService.SendEmailAsync(providerCompanyEmail, emailSubject, emailBody);
+            if (!emailSent)
+            {
+                Console.WriteLine($"Failed to send email to {providerCompanyEmail}");
+            }
 
             return "Project request sent successfully.";
         }
