@@ -328,11 +328,6 @@ namespace CompanyHubService.Controllers
 
             var companies = await companyService.GetCompaniesOfUserAsync(userId);
 
-            if (companies == null || !companies.Any())
-            {
-                return NotFound(new { Message = "No company found for the user." });
-            }
-
             return Ok(companies);
         }
 
